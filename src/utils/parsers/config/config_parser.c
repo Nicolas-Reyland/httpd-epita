@@ -60,8 +60,8 @@ void free_server_config(struct server_config *config, bool free_obj)
 
     for (size_t i = 0; i < config->num_vhosts; ++i)
     {
-        hash_map_free(congig->vhosts[i], true);
-        congig->vhosts[i] = NULL;
+        hash_map_free(config->vhosts[i], true);
+        config->vhosts[i] = NULL;
     }
     config->num_vhosts = 0;
 

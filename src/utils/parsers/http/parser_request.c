@@ -222,6 +222,7 @@ struct request *parser_request(char *request)
 
 /*
 int main(void)
+>>>>>>> cee241e (feat: added a parser option semi functional)
 {
     struct request *req = parser_request(
         "GET /path/script.cgi?field1=value1&field2=value2 HTTP/1.1\r\nconnexion:

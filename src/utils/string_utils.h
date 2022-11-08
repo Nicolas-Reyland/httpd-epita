@@ -13,6 +13,8 @@ void skip_all_classifier(char **content, int (*classifier)(int));
 char *token_from_class(char **content, int (*classifier)(int),
                        size_t *token_len);
 
+void skip_to_nonwhitespace(char **content);
+
 int replace_substring(char **str, char *str_start, char *substr,
                       char *replacement);
 

@@ -1,10 +1,11 @@
 #include "config_parser.h"
 
+#include <stdlib.h>
 
 #include "utils/mem.h"
 #include "utils/string_utils.h"
 
-struct server_config *parse_config(char *filename)
+struct server_config *parse_config(const char *filename)
 {
     FILE *stream = fopen(filename, "r");
     if (stream == NULL)
@@ -33,7 +34,8 @@ struct server_config *parse_config_from_stream(FILE *stream)
     //
 
     // clean up
-    free_array(lines, num_lines, true);
+    void *void_lines = lines;
+    free_array(void_lines, num_lines, true);
     FCLOSE_SET_NULL(stream);
 
     return config;
@@ -43,7 +45,9 @@ struct server_config *parse_config_from_stream(FILE *stream)
  * Returns true if the config is valid, false otherwise.
  * Fills the config 'global' and 'vhost's with default values
  */
-bool fill_server_config(struct server_config *config, struct hash_map *default_global, struct hash_map *default_vhost)
+bool fill_server_config(struct server_config *config,
+                        struct hash_map *default_global,
+                        struct hash_map *default_vhost)
 {
     (void)config;
     (void)default_global;

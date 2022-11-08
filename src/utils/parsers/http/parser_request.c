@@ -165,19 +165,19 @@ struct request *parse_request_header(char *request)
  */
 void tokenise_option(char *token, struct request *request)
 {
-    if(!token)
+    if (!token)
         return;
     size_t i = 0;
     size_t end = 0;
     i = next_token(token, i);
-    end = end_token(token,i);
-    if(token[i] == '\0')
+    end = end_token(token, i);
+    if (token[i] == '\0')
         return;
     char *key = my_strcpy(token, i, end - 1);
     i = end;
     i = next_token(token, i);
-    end = end_token(token,i);
-    if(token[i] == '\0')
+    end = end_token(token, i);
+    if (token[i] == '\0')
         return;
     char *value = my_strcpy(token, i, end);
     hash_map_insert(request->hash_map, key, value, NULL);
@@ -194,7 +194,7 @@ int is_not_cr(int c)
 
 /*
  *   request = request string to parse
- *   Function: parse a request string and 
+ *   Function: parse a request string and
  *             return a struct request fullfilled
  */
 struct request *parser_request(char *request)
@@ -207,14 +207,14 @@ struct request *parser_request(char *request)
     if (!token)
         return NULL;
     struct request *req = parse_request_header(token);
-    if(!req)
+    if (!req)
         return NULL;
-    request_cpy+=2;
-    while(token != NULL && request_cpy[0] != '\0')
+    request_cpy += 2;
+    while (token != NULL && request_cpy[0] != '\0')
     {
         token = token_from_class(&request_cpy, is_not_cr, NULL);
         tokenise_option(token, request);
-        request_cpy+=2;
+        request_cpy += 2;
     }
 
     free(initial_ptr);
@@ -226,8 +226,8 @@ struct request *parser_request(char *request)
 int main(void)
 {
     struct request *req = parser_request(
-        "GET /path/script.cgi?field1=value1&field2=value2 HTTP/1.1\r\nconnexion: close\r\n");
-    if (req)
+        "GET /path/script.cgi?field1=value1&field2=value2 HTTP/1.1\r\nconnexion:
+close\r\n"); if (req)
     {
         printf("%s \n", req->method);
         printf("%s \n", req->target);

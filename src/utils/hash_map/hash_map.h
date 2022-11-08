@@ -20,7 +20,7 @@ size_t hash(char *str);
 
 struct hash_map *hash_map_init(size_t size);
 
-void hash_map_free(struct hash_map *hash_map, bool free_obj);
+void free_hash_map(struct hash_map *hash_map, bool free_obj);
 
 bool hash_map_insert(struct hash_map *hash_map, char *key, char *value,
                      bool *updated);

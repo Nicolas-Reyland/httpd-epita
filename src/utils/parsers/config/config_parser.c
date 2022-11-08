@@ -64,7 +64,7 @@ void free_server_config(struct server_config *config, bool free_obj)
 
     for (size_t i = 0; i < config->num_vhosts; ++i)
     {
-        hash_map_free(config->vhosts[i], true);
+        free_hash_map(config->vhosts[i], true);
         config->vhosts[i] = NULL;
     }
     config->num_vhosts = 0;

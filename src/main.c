@@ -4,6 +4,7 @@
 #include "utils/hash_map/hash_map.h"
 #include "utils/parsers/config/config_parser.h"
 
+#ifndef CUSTOM_MAIN
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -28,3 +29,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
+#endif /* !CUSTOM_MAIN */

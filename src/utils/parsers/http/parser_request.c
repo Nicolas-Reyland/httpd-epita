@@ -222,11 +222,12 @@ struct request *parser_request(char *request)
     return req;
 }
 
-
+#if defined(CUSTOM_MAIN) && defined(MAIN1)
 int main(void)
 {
-    struct request *req = parser_request(
-        "GET /path/script.cgi?field1=value1&field2=value2 HTTP/1.1\r\nconnexion:close\r\n"); 
+    struct request *req =
+        parser_request("GET /path/script.cgi?field1=value1&field2=value2 "
+                       "HTTP/1.1\r\nconnexion:close\r\n");
     if (req)
     {
         printf("%s \n", req->method);
@@ -236,3 +237,4 @@ int main(void)
     }
     return 0;
 }
+#endif /* CUSTOM_MAIN */

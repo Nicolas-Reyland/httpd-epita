@@ -10,8 +10,8 @@ CFLAGS = -std=c99 -Werror -Wall -Wextra -Wvla
 CFLAGS += -g -fsanitize=address
 # mandatory (self)
 CFLAGS += -Isrc -I.
-# debugging
-CFLAGS += -pedantic
+# more
+CFLAGS += -pedantic -D_XOPEN_SOURCE=700
 # custom
 CFLAGS += $(CMD_CFLAGS)
 

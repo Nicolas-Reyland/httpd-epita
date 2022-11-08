@@ -55,43 +55,6 @@ char **read_lines_from_stream(FILE *stream, size_t *num_lines_ptr)
     return lines;
 }
 
-char *get_next_word(char **content, const char *delim)
-{
-    skip_to_nonwhitespace(content);
-
-    // set start of token
-    char *start = *content;
-    // increment content, until a delimiter from 'delim'
-    // or a whitespace is met (see isspace(3))
-    for (; **content != 0; ++(*content))
-    {
-        // loop over the delimiters, breaking if one matches teh current char
-        const char *d = delim;
-        for (; *d != 0; d++)
-            if (**content == *d)
-                break;
-        // checking if a delimiter or a whitespace has been met
-        if (*d != 0 || isspace(**content))
-            break;
-    }
-
-    if (start == *content)
-        return NULL;
-
-    // copy content into token
-    size_t token_size = *content - start;
-    char *token = malloc(token_size + 1);
-    memcpy(token, start, token_size);
-    token[token_size] = 0;
-
-    return token;
-}
-
-void skip_to_nonwhitespace(char **content)
-{
-    skip_all_classifier(content, isspace);
-}
-
 int is_empty_line(char *line)
 {
     skip_to_nonwhitespace(&line);
@@ -124,11 +87,6 @@ char *token_from_class(char **content, int (*classifier)(int),
     token[num_chars] = 0;
 
     return token;
-}
-
-int is_space_char(int c)
-{
-    return c == ' ';
 }
 
 int replace_substring(char **str, char *str_start, char *substr,
@@ -172,13 +130,4 @@ int replace_substring(char **str, char *str_start, char *substr,
     }
 
     return 0;
-}
-
-char *get_location_after_char(char *str, char c)
-{
-    for (char *x = str; *x != 0; ++x)
-        if (*x == c)
-            return x + 1;
-
-    return NULL;
 }

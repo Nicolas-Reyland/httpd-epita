@@ -180,6 +180,7 @@ void tokenise_option(char *token, struct request *request)
     if (token[i] == '\0')
         return;
     char *value = my_strcpy(token, i, end);
+
     hash_map_insert(request->hash_map, key, value, NULL);
 }
 
@@ -209,6 +210,7 @@ struct request *parser_request(char *request)
     struct request *req = parse_request_header(token);
     if (!req)
         return NULL;
+
     request_cpy += 2;
     while (token != NULL && request_cpy[0] != '\0')
     {
@@ -224,7 +226,6 @@ struct request *parser_request(char *request)
 
 /*
 int main(void)
->>>>>>> cee241e (feat: added a parser option semi functional)
 {
     struct request *req = parser_request(
         "GET /path/script.cgi?field1=value1&field2=value2 HTTP/1.1\r\nconnexion:

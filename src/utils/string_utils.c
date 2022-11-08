@@ -1,4 +1,4 @@
-#include "utils/string_utils.h"
+#include "string_utils.h"
 
 #include <ctype.h>
 #include <stdbool.h>

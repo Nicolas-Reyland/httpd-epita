@@ -17,4 +17,4 @@
 
 void free_array(void **arr, size_t size, bool free_obj);
 
-#endif /* MEM_H */
+#endif /* !MEM_H */

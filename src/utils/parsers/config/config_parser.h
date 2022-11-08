@@ -22,4 +22,4 @@ bool fill_server_config(struct server_config *config, struct hash_map *default_g
 
 void free_server_config(struct server_config *config, bool free_obj);
 
-#endif /* CONFIG_PARSER_H */
+#endif /* !CONFIG_PARSER_H */

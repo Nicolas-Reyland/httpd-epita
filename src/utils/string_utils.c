@@ -37,6 +37,8 @@ char **read_lines_from_stream(FILE *stream, size_t *num_lines_ptr)
         for (size_t i = 0; i < num_lines; ++i)
             free(lines[i]);
         free(lines);
+        // set number of lines to incompatible value with NULL
+        *num_lines_ptr = 1;
         return NULL;
     }
     if (num_lines == 0)

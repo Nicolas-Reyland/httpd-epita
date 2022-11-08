@@ -17,6 +17,12 @@ static void fill_struct(struct request *req, char *token, size_t count);
 
 static struct request *init_request(void);
 
+static struct request *parse_request_header(char *request);
+
+static void tokenise_option(char *token, struct request *request);
+
+static int is_not_cr(int c);
+
 /*
  *   void paramater
  *   Function: Init the struct request
@@ -154,7 +160,7 @@ struct request *parse_request_header(char *request)
  *   Function: Tokenise a string containing "key: value" and puts
  *              it in hashmap of request
  */
-/*void tokenise_option(char *token, struct request *request)
+void tokenise_option(char *token, struct request *request)
 {
     if(!token)
         return;
@@ -171,8 +177,8 @@ struct request *parse_request_header(char *request)
     if(token[i] == '\0')
         return;
     char *value = my_strcpy(token, i, end);
-    //hash_map_insert(request->hash_map, key, value, boolean);
-}*/
+    hash_map_insert(request->hash_map, key, value, NULL);
+}
 
 /*
  *   c = character to test
@@ -190,8 +196,8 @@ int is_not_cr(int c)
  */
 struct request *parser_request(char *request)
 {
-    char *request_cpy = malloc(sizeof(char) * strlen(request));
-    memcpy(request_cpy, request, strlen(request));
+    char *request_cpy = malloc(strlen(request) + 1);
+    strcpy(request_cpy, request);
     char *initial_ptr = request_cpy;
 
     char *token = token_from_class(&request_cpy, is_not_cr, NULL);
@@ -201,10 +207,10 @@ struct request *parser_request(char *request)
     if(!req)
         return NULL;
     request_cpy+=2;
-    while(token != NULL)
+    while(token != NULL && request_cpy[0] != '\0')
     {
         token = token_from_class(&request_cpy, is_not_cr, NULL);
-        //tokenise_option(token, request);
+        tokenise_option(token, request);
         request_cpy+=2;
     }
 
@@ -213,7 +219,8 @@ struct request *parser_request(char *request)
     return req;
 }
 
-/*int main(void)
+/*
+int main(void)
 {
     struct request *req = parser_request(
         "GET /path/script.cgi?field1=value1&field2=value2 HTTP/1.1\r\nconnexion: close\r\n");

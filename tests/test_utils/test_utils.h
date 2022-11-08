@@ -7,10 +7,14 @@
 #define EXP_NOT_NULL "Expected NOt null."
 
 #define CR_ASSERT_NULL_EXPANDED(Val)                                           \
-    cr_assert_null((Val), #Val ": " "Expected " #Val " TO BE null.")
+    cr_assert_null((Val),                                                      \
+                   #Val ": "                                                   \
+                        "Expected " #Val " TO BE null.")
 
 #define CR_ASSERT_NOT_NULL_EXPANDED(Val)                                       \
-    cr_assert_not_null((Val), #Val ": " "Expected " #Val " NOT null.")
+    cr_assert_not_null((Val),                                                  \
+                       #Val ": "                                               \
+                            "Expected " #Val " NOT null.")
 
 #define CR_ASSERT_EQ_DIGIT_EXPANDED(Val1, Val2)                                \
     cr_assert_eq((Val1), (Val2), #Val2 ": " EXP_GOT_DIGIT, (Val1), (Val2))

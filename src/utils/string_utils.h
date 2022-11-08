@@ -15,6 +15,8 @@ char *token_from_class(char **content, int (*classifier)(int),
 
 void skip_to_nonwhitespace(char **content);
 
+int line_is_empty(char *line);
+
 int replace_substring(char **str, char *str_start, char *substr,
                       char *replacement);
 

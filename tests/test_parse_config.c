@@ -24,7 +24,7 @@ Test(ParseConfig, simple)
         { "vx", "vy", "vz", NULL },
     };
     // actual
-    struct server_config *actual = parse_config(filename);
+    struct server_config *actual = parse_server_config(filename);
 
     CR_ASSERT_NOT_NULL_EXPANDED(actual);
     CR_ASSERT_NOT_NULL_EXPANDED(actual->global);

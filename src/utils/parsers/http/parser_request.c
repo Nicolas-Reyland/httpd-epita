@@ -154,8 +154,6 @@ struct request *parse_request_header(char *request)
     }
     return req;
 }
-<<<<<<< HEAD
-=======
 
 /*
  *   token = string containing "key: value"

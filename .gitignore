@@ -1,6 +1,7 @@
 *.o
 httpd
 httpd-test
+a.out
 
 # :(
 .vscode

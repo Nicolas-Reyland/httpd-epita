@@ -11,17 +11,17 @@ static size_t length_of_null_terminated(void **arr);
 #define NUM_VHOSTS 1
 Test(ParseConfig, simple)
 {
-    const char *filename = "content/config/simple.txt";
+    const char *filename = "tests/content/simple.conf";
     // expected
-    char *global_keys[] = { "a", "b", "c" };
+    char *global_keys[] = { "log_file", "log", "pid_file" };
     size_t global_num_keys = sizeof(global_keys) / sizeof(global_keys[0]);
-    char *global_values[] = { "va", "vb", "vc" };
+    char *global_values[] = { "server.log", "true", "/tmp/HTTPd.pid" };
 
     char *vhost_keys[NUM_VHOSTS][MAX_NUM_KEYS] = {
-        { "x", "y", "z", NULL },
+        { "server_name", "port", "ip", "root_dir", NULL },
     };
     char *vhost_values[NUM_VHOSTS][MAX_NUM_KEYS] = {
-        { "vx", "vy", "vz", NULL },
+        { "images", "1312", "127.0.0.1", "votai/test.", NULL },
     };
     // actual
     struct server_config *actual = parse_server_config(filename);

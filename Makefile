@@ -35,7 +35,6 @@ TEST_EXE = httpd-test
 all: $(EXE)
 
 check: $(TEST_EXE)
-	echo $(TEST_SRCS)
 	./$(TEST_EXE) $(CMD_TEST_ARGS)
 
 $(EXE): $(OBJS) $(MAIN_C)

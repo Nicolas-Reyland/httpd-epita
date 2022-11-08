@@ -215,7 +215,7 @@ struct request *parser_request(char *request)
     while (token != NULL && request_cpy[0] != '\0')
     {
         token = token_from_class(&request_cpy, is_not_cr, NULL);
-        tokenise_option(token, request);
+        tokenise_option(token, req);
         request_cpy += 2;
     }
 

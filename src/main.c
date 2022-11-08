@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "utils/hash_map/hash_map.h"
@@ -16,12 +17,14 @@ int main(int argc, char **argv)
     }
 
     puts("global :");
-    hash_map_dump(config->global);
+    hash_map_dump(config->global, " - ");
     for (size_t i = 0; i < config->num_vhosts; ++i)
     {
-        printf("vhosts %zu\n", i);
-        hash_map_dump(config->vhosts[i]);
+        printf("vhosts %zu :\n", i);
+        hash_map_dump(config->vhosts[i], " - ");
     }
+
+    free_server_config(config, true);
 
     return 0;
 }

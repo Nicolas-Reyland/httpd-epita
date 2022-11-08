@@ -6,8 +6,9 @@
 #include <string.h>
 #include <unistd.h>
 
-// TODO: set this to 4096
-#define MY_GETLINE_BUFF_INCR 5
+#include "utils/mem.h"
+
+#define MY_GETLINE_BUFF_INCR 4096
 
 static ssize_t my_getline(char **lineptr, FILE *stream);
 
@@ -20,8 +21,11 @@ char **read_lines_from_stream(FILE *stream, size_t *num_lines_ptr)
     size_t num_lines = 0;
 
     char *lineptr = NULL;
+    size_t lineptr_n;
+    (void)my_getline;
 
-    for (ssize_t num_read = 0; (num_read = my_getline(&lineptr, stream)) != -1;)
+    for (ssize_t num_read = 0;
+         (num_read = getline(&lineptr, &lineptr_n, stream)) != -1;)
     {
         if (num_read == 0)
             continue;
@@ -85,7 +89,10 @@ ssize_t my_getline(char **lineptr, FILE *stream)
         (*lineptr)[size++] = c;
     }
     if (size == 0)
+    {
+        FREE_SET_NULL(*lineptr);
         return -1;
+    }
 
     *lineptr = realloc(*lineptr, size + 1);
     (*lineptr)[size] = 0;

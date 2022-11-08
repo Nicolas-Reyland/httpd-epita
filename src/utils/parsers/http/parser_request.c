@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../string_utils.h"
 
 static size_t end_token(char *request, size_t index);
 
@@ -28,6 +29,7 @@ struct request *init_request(void)
     req->method = NULL;
     req->target = NULL;
     req->version = NULL;
+    //req->hash_map = hash_map_init(1);
     return req;
 }
 
@@ -112,10 +114,11 @@ void fill_struct(struct request *req, char *token, size_t count)
 
 /*
  *   request = curr struct request
- *   Function: Fill and return a struct request with the string
- *             given in parameter. In case of error, return NULL
+ *   Function: Create and fill a struct request with the string 
+ *             header line given in parameter. Return NULL in 
+ *             case of error
  */
-struct request *parse_request(char *request)
+struct request *parse_request_header(char *request)
 {
     struct request *req = init_request();
     if (!req)
@@ -145,10 +148,75 @@ struct request *parse_request(char *request)
     return req;
 }
 
-int main(void)
+/*
+ *   token = string containing "key: value"
+ *   request = The request we are parsing
+ *   Function: Tokenise a string containing "key: value" and puts
+ *              it in hashmap of request
+ */
+/*void tokenise_option(char *token, struct request *request)
 {
-    struct request *req = parse_request(
-        "GET /path/script.cgi?field1=value1&field2=value2 HTTP/1.1");
+    if(!token)
+        return;
+    size_t i = 0;
+    size_t end = 0;
+    i = next_token(token, i);
+    end = end_token(token,i);
+    if(token[i] == '\0')
+        return;
+    char *key = my_strcpy(token, i, end - 1);
+    i = end;
+    i = next_token(token, i);
+    end = end_token(token,i);
+    if(token[i] == '\0')
+        return;
+    char *value = my_strcpy(token, i, end);
+    //hash_map_insert(request->hash_map, key, value, boolean);
+}*/
+
+/*
+ *   c = character to test
+ *   Function: Test if c is a carriage return
+ */
+int is_not_cr(int c)
+{
+    return c != '\r';
+}
+
+/*
+ *   request = request string to parse
+ *   Function: parse a request string and 
+ *             return a struct request fullfilled
+ */
+struct request *parser_request(char *request)
+{
+    char *request_cpy = malloc(sizeof(char) * strlen(request));
+    memcpy(request_cpy, request, strlen(request));
+    char *initial_ptr = request_cpy;
+
+    char *token = token_from_class(&request_cpy, is_not_cr, NULL);
+    if (!token)
+        return NULL;
+    struct request *req = parse_request_header(token);
+    if(!req)
+        return NULL;
+    request_cpy+=2;
+    while(token != NULL)
+    {
+        token = token_from_class(&request_cpy, is_not_cr, NULL);
+        //tokenise_option(token, request);
+        request_cpy+=2;
+    }
+
+    free(initial_ptr);
+    free(token);
+    return req;
+}
+
+/*int main(void)
+{
+    struct request *req = parser_request(
+        "GET /path/script.cgi?field1=value1&field2=value2 HTTP/1.1\r\nconnexion: close\r\n");
     if (req)
     {
         printf("%s \n", req->method);
@@ -157,4 +225,4 @@ int main(void)
         free_request(req);
     }
     return 0;
-}
+}*/

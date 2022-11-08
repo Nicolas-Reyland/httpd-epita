@@ -1,8 +1,8 @@
 #include "config_parser.h"
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #include "utils/mem.h"
 #include "utils/string_utils.h"
@@ -18,8 +18,7 @@ struct server_config *parse_server_config(const char *filename)
     return parse_server_config_from_stream(stream);
 }
 
-static bool parse_config_raw(struct server_config *config, char **lines
-                             );
+static bool parse_config_raw(struct server_config *config, char **lines);
 
 struct server_config *parse_server_config_from_stream(FILE *stream)
 {
@@ -41,8 +40,9 @@ struct server_config *parse_server_config_from_stream(FILE *stream)
     bool success = parse_config_raw(config, lines);
 
     // clean up
-    void *void_lines = lines;
-    free_array(void_lines, num_lines, true);
+    for (size_t i = 0; i < num_lines; ++i)
+        free(lines[i]);
+    free(lines);
     FCLOSE_SET_NULL(stream);
 
     if (!success)
@@ -66,7 +66,7 @@ bool parse_config_raw(struct server_config *config, char **lines)
     {
         bool is_vhost;
         ;
-        if (strcmp(lines[0], "[[global]]") == 0)
+        if (strcmp(lines[0], "[global]") == 0)
         {
             // global
             if (global_is_set)
@@ -114,6 +114,12 @@ struct hash_map *parse_attributes(char ***lines)
         return NULL;
     while ((*lines)[0] != NULL && (*lines)[0][0] != '[')
     {
+        if (line_is_empty(**lines))
+        {
+            ++(*lines);
+            continue;
+        }
+
         char *line_cpy = **lines;
         skip_to_nonwhitespace(*lines);
         char *key = token_from_class(*lines, &isnotseparator, NULL);

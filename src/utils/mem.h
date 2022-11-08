@@ -15,6 +15,6 @@
         (Ptr) = NULL;                                                          \
     }
 
-void free_array(void **arr, size_t size, bool free_arr);
+void free_array(void **arr, size_t size, bool free_obj);
 
 #endif /* MEM_H */

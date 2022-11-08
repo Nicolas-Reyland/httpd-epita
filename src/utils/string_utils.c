@@ -84,6 +84,8 @@ ssize_t my_getline(char **lineptr, FILE *stream)
             *lineptr = realloc(*lineptr, (capacity += MY_GETLINE_BUFF_INCR));
         (*lineptr)[size++] = c;
     }
+    if (size == 0)
+        return -1;
 
     *lineptr = realloc(*lineptr, size + 1);
     (*lineptr)[size] = 0;
@@ -106,9 +108,19 @@ char *token_from_class(char **content, int (*classifier)(int),
                        size_t *token_len)
 {
     char *content_start = *content;
-    for (; **content != 0 && (*classifier)(**content); ++(*content))
-        continue;
-    size_t num_chars = *content - content_start;
+    size_t num_chars;
+    if (classifier != NULL)
+    {
+        for (; **content != 0 && (*classifier)(**content); ++(*content))
+            continue;
+        num_chars = *content - content_start;
+    }
+    else
+    {
+        num_chars = strlen(*content);
+        *content += num_chars;
+    }
+
     if (token_len != NULL)
         *token_len = num_chars;
 
@@ -129,6 +141,15 @@ void skip_to_nonwhitespace(char **content)
     // go to the next non-whitespace character
     for (; **content != 0 && isspace(**content); ++(*content))
         continue;
+}
+
+int line_is_empty(char *line)
+{
+    if (line == NULL)
+        return 0;
+
+    skip_to_nonwhitespace(&line);
+    return *line == 0;
 }
 
 int replace_substring(char **str, char *str_start, char *substr,

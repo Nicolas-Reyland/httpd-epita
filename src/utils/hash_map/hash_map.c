@@ -115,8 +115,7 @@ char *hash_map_get(const struct hash_map *hash_map, char *key)
                 return list->value;
     }
 
-    // try to retrieve as environment variable
-    return getenv(key);
+    return NULL;
 }
 
 bool hash_map_remove(struct hash_map *hash_map, char *key)

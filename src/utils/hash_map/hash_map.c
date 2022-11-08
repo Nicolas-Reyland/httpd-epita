@@ -22,7 +22,7 @@ struct hash_map *hash_map_init(size_t size)
     return map;
 }
 
-void hash_map_free(struct hash_map *hash_map, bool free_obj)
+void free_hash_map(struct hash_map *hash_map, bool free_obj)
 {
     if (hash_map == NULL)
         return;

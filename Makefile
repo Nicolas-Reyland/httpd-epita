@@ -23,7 +23,7 @@ rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(su
 
 MAIN_C = src/main.c
 SRCS = $(filter-out $(MAIN_C),$(call rwildcard,src,*.c))
-TEST_SRCS = $(call rwildcard,tests,*.c)
+TEST_SRCS = $(call rwildcard,tests,test_*.c)
 OBJS = $(SRCS:.c=.o)
 TEST_OBJS = $(TEST_SRCS:.c=.o)
 

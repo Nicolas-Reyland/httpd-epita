@@ -2,6 +2,7 @@
 #define MEM_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define FREE_SET_NULL(Ptr)                                                     \
     {                                                                          \

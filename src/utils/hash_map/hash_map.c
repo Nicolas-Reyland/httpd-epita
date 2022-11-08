@@ -9,9 +9,8 @@ struct hash_map *hash_map_init(size_t size)
     if (map == NULL)
         return NULL;
 
-    map->keys_ordered = NULL;
-    map->num_keys_ordered = 0;
-    map->lock = false;
+    map->keys = NULL;
+    map->num_keys = 0;
     map->size = size;
     map->data = calloc(size, sizeof(struct pair_list *));
     if (map->data == NULL)
@@ -31,7 +30,7 @@ void hash_map_free(struct hash_map *hash_map, bool free_obj)
     for (size_t i = 0; i < hash_map->size; ++i)
         free_pair_list(hash_map->data[i]);
 
-    free(hash_map->keys_ordered);
+    free(hash_map->keys);
     free(hash_map->data);
     if (free_obj)
         free(hash_map);
@@ -43,21 +42,16 @@ bool hash_map_insert(struct hash_map *hash_map, char *key, char *value,
     if (hash_map == NULL || hash_map->size == 0)
         return false;
 
-    // locked state ?
-    if (hash_map->lock)
-        return true;
-
     if (updated != NULL)
         *updated = false;
 
     size_t hash_of_key = hash(key);
     hash_of_key %= hash_map->size;
 
-    // adding key to key_ordered
-    hash_map->keys_ordered =
-        realloc(hash_map->keys_ordered,
-                (hash_map->num_keys_ordered + 1) * sizeof(char *));
-    hash_map->keys_ordered[hash_map->num_keys_ordered++] = key;
+    // adding key to key
+    hash_map->keys =
+        realloc(hash_map->keys, (hash_map->num_keys + 1) * sizeof(char *));
+    hash_map->keys[hash_map->num_keys++] = key;
 
     // printf("hash value: %zu\n", hash_of_key);
     struct pair_list *list = hash_map->data[hash_of_key];
@@ -113,10 +107,6 @@ char *hash_map_get(const struct hash_map *hash_map, char *key)
     if (hash_map == NULL)
         return NULL;
 
-    // locked state ?
-    if (hash_map->lock)
-        return key;
-
     for (size_t i = 0; i < hash_map->size; ++i)
     {
         for (struct pair_list *list = hash_map->data[i]; list != NULL;
@@ -131,7 +121,7 @@ char *hash_map_get(const struct hash_map *hash_map, char *key)
 
 bool hash_map_remove(struct hash_map *hash_map, char *key)
 {
-    if (hash_map == NULL || hash_map->lock)
+    if (hash_map == NULL)
         return false;
 
     for (size_t i = 0; i < hash_map->size; ++i)

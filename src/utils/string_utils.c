@@ -6,6 +6,11 @@
 #include <string.h>
 #include <unistd.h>
 
+// TODO: set this to 4096
+#define MY_GETLINE_BUFF_INCR 5
+
+static ssize_t my_getline(char **lineptr, FILE *stream);
+
 /*
 ** NULL-terminated lines array
 */
@@ -15,10 +20,8 @@ char **read_lines_from_stream(FILE *stream, size_t *num_lines_ptr)
     size_t num_lines = 0;
 
     char *lineptr = NULL;
-    size_t lineptr_n = 0;
 
-    for (ssize_t num_read = 0;
-         (num_read = getline(&lineptr, &lineptr_n, stream)) != -1;)
+    for (ssize_t num_read = 0; (num_read = my_getline(&lineptr, stream)) != -1;)
     {
         if (num_read == 0)
             continue;
@@ -29,7 +32,6 @@ char **read_lines_from_stream(FILE *stream, size_t *num_lines_ptr)
             lineptr[num_read - 1] = 0;
         lines[num_lines++] = lineptr;
         lineptr = NULL;
-        lineptr_n = 0;
     }
     free(lineptr);
     if (!feof(stream) || ferror(stream))
@@ -58,16 +60,46 @@ char **read_lines_from_stream(FILE *stream, size_t *num_lines_ptr)
     return lines;
 }
 
-int is_empty_line(char *line)
+ssize_t my_getline(char **lineptr, FILE *stream)
 {
-    skip_to_nonwhitespace(&line);
-    return *line == 0 || *line == '#';
+    if (lineptr == NULL)
+        return -1;
+
+    *lineptr = malloc(MY_GETLINE_BUFF_INCR);
+    if (*lineptr == NULL)
+        return -1;
+
+    ssize_t size = 0;
+    ssize_t capacity = MY_GETLINE_BUFF_INCR;
+
+    for (char c = 0; (c = fgetc(stream)) != EOF;)
+    {
+        if (c == '\n')
+        {
+            *lineptr = realloc(*lineptr, size + 1);
+            (*lineptr)[size] = 0;
+            return size;
+        }
+        if (size + 1 == capacity)
+            *lineptr = realloc(*lineptr, (capacity += MY_GETLINE_BUFF_INCR));
+        (*lineptr)[size++] = c;
+    }
+
+    *lineptr = realloc(*lineptr, size + 1);
+    (*lineptr)[size] = 0;
+    return size;
 }
 
 void skip_all_classifier(char **content, int (*classifier)(int))
 {
     for (; **content != 0 && (*classifier)(**content); ++(*content))
         continue;
+}
+
+int is_empty_line(char *line)
+{
+    skip_to_nonwhitespace(&line);
+    return *line == 0 || *line == '#';
 }
 
 char *token_from_class(char **content, int (*classifier)(int),
@@ -90,6 +122,13 @@ char *token_from_class(char **content, int (*classifier)(int),
     token[num_chars] = 0;
 
     return token;
+}
+
+void skip_to_nonwhitespace(char **content)
+{
+    // go to the next non-whitespace character
+    for (; **content != 0 && isspace(**content); ++(*content))
+        continue;
 }
 
 int replace_substring(char **str, char *str_start, char *substr,

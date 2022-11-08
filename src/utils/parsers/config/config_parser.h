@@ -14,11 +14,13 @@ struct server_config
     struct hash_map **vhosts;
 };
 
-struct server_config *parse_config(char *filename);
+struct server_config *parse_config(const char *filename);
 
 struct server_config *parse_config_from_stream(FILE *stream);
 
-bool fill_server_config(struct server_config *config, struct hash_map *default_global, struct hash_map *default_vhost);
+bool fill_server_config(struct server_config *config,
+                        struct hash_map *default_global,
+                        struct hash_map *default_vhost);
 
 void free_server_config(struct server_config *config, bool free_obj);
 

@@ -55,7 +55,8 @@ _Noreturn void run_server(struct server_env *env)
             // Error has occured on file descriptor, or client closed connection
             if (env->events[i].events & (EPOLLHUP | EPOLLERR))
             {
-                // TODO: logging (errno ?)
+                // logging (errno ?)
+                log_error("Error occured in epoll: %d\n", env->events[i]);
                 close(env->events[i].data.fd);
                 // Set things to zero/-1 no ?
                 // env->events[i].data.fd = -1;
@@ -107,7 +108,8 @@ int create_and_bind(char *ip_addr, char *port)
     struct sockaddr_in addr_in = { 0 };
     if (!inet_aton(ip_addr, &addr_in.sin_addr))
     {
-        // TODO: logging (invalid ip adddress)
+        // logging (invalid ip adddress)
+        log_error("Could not retrieve ip address from string '%s'\n", ip_addr);
         return -1;
     }
     void *addr_ptr = &addr_in;
@@ -117,7 +119,8 @@ int create_and_bind(char *ip_addr, char *port)
     int gai_err_code;
     if ((gai_err_code = getaddrinfo(NULL, port, &hints, &result)) != 0)
     {
-        // TODO: looging with gai_strerror(gai_err_code)
+        // looging with gai_strerror(gai_err_code)
+        log_error("Could not get address info from port '%s'\n", port);
         return -1;
     }
 
@@ -141,7 +144,8 @@ int create_and_bind(char *ip_addr, char *port)
 
     if (addr == NULL)
     {
-        // TODO: logging (no suitable address)
+        log_error("No suitable address found\n");
+        // logging (no suitable address)
         return -1;
     }
 
@@ -178,7 +182,7 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
         free(env);
         free(vhosts_socket_fds);
         free(events);
-        // TODO: logging (OOM)
+        log_error("Out of memory (%s)\n", __func__);
         return NULL;
     }
 

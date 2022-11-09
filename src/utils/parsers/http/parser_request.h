@@ -1,8 +1,9 @@
 #ifndef PARSER_REQUEST_H
 #define PARSER_REQUEST_H
 
-#include "utils/hash_map/hash_map.h"
 #include <stddef.h>
+
+#include "utils/hash_map/hash_map.h"
 
 struct request
 {
@@ -14,6 +15,6 @@ struct request
     struct hash_map *hash_map;
 };
 
-struct request *parser_request(char *raw_request, size_t size);
+struct request *parser_request(char *raw_request, size_t size, int *err);
 
 #endif /* !PARSER_REQUEST_H */

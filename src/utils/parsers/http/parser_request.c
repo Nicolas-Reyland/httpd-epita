@@ -252,13 +252,14 @@ struct request *parser_request(char *request)
     }
     if (request_cpy[0] != '\0')
     {
-        char *body = malloc(strlen(request_cpy) + 1);
+        token = token_from_class(&request_cpy, is_not_cr, NULL);
+        char *body = malloc(strlen(token) + 1);
         if (!body)
         {
             free_elements(initial_ptr,token,req);
             return NULL;
         }
-        strcpy(body, request_cpy);
+        strcpy(body, token);
         req->body = body;
     }
     free_elements(initial_ptr, token, NULL);
@@ -270,7 +271,11 @@ int main(void)
 {
     struct request *req =
         parser_request("GET /path/script.cgi?field1=value1&field2=value2 "
-                       "HTTP/1.1\r\nconnexion: close\r\ninsh: camarche\r\n\r\nthis is the body");
+                       "HTTP/1.1\r\n"
+                       "connexion: close\r\n"
+                       "insh: camarche\r\n"
+                       "\r\n"
+                       "this is the body\r\n");
     if (req)
     {
         printf("%s \n", req->method);

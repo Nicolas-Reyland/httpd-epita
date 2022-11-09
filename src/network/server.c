@@ -25,9 +25,6 @@ static bool set_socket_nonblocking_mode(int socket_fd);
 static struct server_env *setup_server(int num_threads,
                                        struct server_config *config);
 
-// TODO: put this in the .h file
-_Noreturn void run_server(struct server_env *env);
-
 _Noreturn void start_all(int num_threads, struct server_config *config)
 {
     struct server_env *env = setup_server(num_threads, config);

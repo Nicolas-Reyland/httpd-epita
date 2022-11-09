@@ -80,11 +80,11 @@ Test(ParseConfig, two_vhosts)
 
     char *vhost_keys[NUM_VHOSTS][MAX_NUM_KEYS] = {
         { "server_name", "port", "ip", "root_dir", NULL },
-        { "port", "root_dir", "ip", "server_name", NULL },
+        { "port", "root_dir", "ip", NULL },
     };
     char *vhost_values[NUM_VHOSTS][MAX_NUM_KEYS] = {
         { "images", "1312", "127.0.0.1", "votai/test.", NULL },
-        { "69", "/", "8.8.8.8", "videos" },
+        { "69", "/", "8.8.8.8" },
     };
     // actual
     struct server_config *actual = parse_server_config(filename);

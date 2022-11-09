@@ -11,7 +11,8 @@ CFLAGS += -g -fsanitize=address
 # mandatory (self)
 CFLAGS += -Isrc -I.
 # more
-CFLAGS += -pedantic -D_XOPEN_SOURCE=700
+CFLAGS += -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=700
+# Note: NOT setting -pedantic, because it doesn't support _Noreturn functions
 # custom
 CFLAGS += $(CMD_CFLAGS)
 

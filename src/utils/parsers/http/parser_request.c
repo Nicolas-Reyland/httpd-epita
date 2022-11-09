@@ -36,7 +36,13 @@ struct request *init_request(void)
     req->method = NULL;
     req->target = NULL;
     req->version = NULL;
-    // req->hash_map = hash_map_init(1);
+    req->body = NULL;
+    req->hash_map = hash_map_init(1);
+    if (!req->hash_map)
+    {
+        free(req);
+        return NULL;
+    }
     return req;
 }
 
@@ -96,6 +102,10 @@ void free_request(struct request *req)
         free(req->target);
     if (req->version)
         free(req->version);
+    if (req->body)
+        free(req->body);
+    if (req->hash_map)
+        free_hash_map(req->hash_map,1);
     free(req);
 }
 
@@ -193,6 +203,22 @@ int is_not_cr(int c)
 
 /*
  *   request = request string to parse
+ *   token = current token
+ *   req = struct request of the string request   
+ *   Function: free different elements
+ */
+void free_elements(char *request, char *token, struct request *req)
+{
+    if(token)
+        free(token);
+    if (request)
+        free(request);
+    if (req)
+        free_request(req);
+}
+
+/*
+ *   request = request string to parse
  *   Function: parse a request string and
  *             return a struct request fullfilled
  */
@@ -204,21 +230,38 @@ struct request *parser_request(char *request)
 
     char *token = token_from_class(&request_cpy, is_not_cr, NULL);
     if (!token)
+    {
+        free_elements(initial_ptr, NULL, NULL);
         return NULL;
+    }
     struct request *req = parse_request_header(token);
     if (!req)
+    {
+        free_elements(initial_ptr, token, req);
         return NULL;
+    }
 
     request_cpy += 2;
     while (token != NULL && request_cpy[0] != '\0')
     {
+        free(token);
+        token = NULL;
         token = token_from_class(&request_cpy, is_not_cr, NULL);
         tokenise_option(token, req);
         request_cpy += 2;
     }
-
-    free(initial_ptr);
-    free(token);
+    if (request_cpy[0] != '\0')
+    {
+        char *body = malloc(strlen(request_cpy) + 1);
+        if (!body)
+        {
+            free_elements(initial_ptr,token,req);
+            return NULL;
+        }
+        strcpy(body, request_cpy);
+        req->body = body;
+    }
+    free_elements(initial_ptr, token, NULL);
     return req;
 }
 
@@ -227,12 +270,15 @@ int main(void)
 {
     struct request *req =
         parser_request("GET /path/script.cgi?field1=value1&field2=value2 "
-                       "HTTP/1.1\r\nconnexion:close\r\n");
+                       "HTTP/1.1\r\nconnexion: close\r\ninsh: camarche\r\n\r\nthis is the body");
     if (req)
     {
         printf("%s \n", req->method);
         printf("%s \n", req->target);
         printf("%s \n", req->version);
+        printf("%s \n", req->body);
+        printf("%zu\n", req->hash_map->num_keys);
+        hash_map_dump(req->hash_map, " - ");
         free_request(req);
     }
     return 0;

@@ -8,6 +8,7 @@ struct request
     char *method;
     char *target;
     char *version;
+    char *body;
     struct hash_map *hash_map;
 };
 

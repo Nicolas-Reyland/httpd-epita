@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "network/server.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/parsers/config/config_parser.h"
 
@@ -24,6 +25,8 @@ int main(int argc, char **argv)
         printf("vhosts %zu :\n", i);
         hash_map_dump(config->vhosts[i], " - ");
     }
+
+    start_all(1, config);
 
     free_server_config(config, true);
 

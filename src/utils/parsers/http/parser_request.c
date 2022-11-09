@@ -294,8 +294,9 @@ int main(void)
                        "H\0\0\0TTP/1.1\r\n"
                        "con\0nexion: close\r\n"
                        "insh: c\0amarche\r\n"
+                       "key     :\0v\0\r\n"
                        "\r\n"
-                       "this is the body";
+                       "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
     struct request *req =
         parser_request(req_string, size);
@@ -304,8 +305,12 @@ int main(void)
         printf("%s\n", req->method);
         printf("%s\n", req->target);
         printf("%s\n", req->version);
-        for (size_t i = 0; i < req->body_size; ++i)
-            printf("%c", req->body[i]);
+        for (size_t i = 0; i < req->body_size; ++i) {
+            unsigned char c = req->body[i];
+            if (c < ' ' || c == 0xf7)
+                printf("<0x%x>", c);
+            printf("%c", c);
+        }
         printf("\n");
         printf("%zu\n", req->hash_map->num_keys);
         hash_map_dump(req->hash_map, " - ");

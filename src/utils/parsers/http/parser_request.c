@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../string_utils.h"
+#include "utils/mem.h"
+#include "utils/string_utils.h"
 
 static size_t end_token(char *request, size_t index);
 
@@ -36,6 +37,7 @@ struct request *init_request(void)
     req->method = NULL;
     req->target = NULL;
     req->version = NULL;
+    req->body_size = 0;
     req->body = NULL;
     req->hash_map = hash_map_init(1);
     if (!req->hash_map)
@@ -96,6 +98,9 @@ char *my_strcpy(char *request, size_t begin, size_t end)
  */
 void free_request(struct request *req)
 {
+    if (req == NULL)
+        return;
+
     if (req->method)
         free(req->method);
     if (req->target)
@@ -209,26 +214,25 @@ int is_not_cr(int c)
  */
 void free_elements(char *request, char *token, struct request *req)
 {
-    if(token)
-        free(token);
-    if (request)
-        free(request);
-    if (req)
-        free_request(req);
+    free(token);
+    free(request);
+    free_request(req);
 }
+
+static char *sanitize_request(char *raw_request, size_t *size);
 
 /*
  *   request = request string to parse
  *   Function: parse a request string and
  *             return a struct request fullfilled
  */
-struct request *parser_request(char *request)
+struct request *parser_request(char *raw_request, size_t size)
 {
-    char *request_cpy = malloc(strlen(request) + 1);
-    strcpy(request_cpy, request);
-    char *initial_ptr = request_cpy;
+    (void)size;
+    char *request = sanitize_request(raw_request, &size);
+    char *initial_ptr = request;
 
-    char *token = token_from_class(&request_cpy, is_not_cr, NULL);
+    char *token = token_from_class(&request, is_not_cr, NULL);
     if (!token)
     {
         free_elements(initial_ptr, NULL, NULL);
@@ -241,47 +245,68 @@ struct request *parser_request(char *request)
         return NULL;
     }
 
-    request_cpy += 2;
-    while (token != NULL && request_cpy[0] != '\0')
+    request += 2;
+    while (token != NULL && request[0] != '\r')
     {
-        free(token);
-        token = NULL;
-        token = token_from_class(&request_cpy, is_not_cr, NULL);
+        FREE_SET_NULL(token);
+        token = token_from_class(&request, is_not_cr, NULL);
         tokenise_option(token, req);
-        request_cpy += 2;
+        request += 2;
     }
-    if (request_cpy[0] != '\0')
-    {
-        token = token_from_class(&request_cpy, is_not_cr, NULL);
-        char *body = malloc(strlen(token) + 1);
-        if (!body)
-        {
-            free_elements(initial_ptr,token,req);
-            return NULL;
-        }
-        strcpy(body, token);
-        req->body = body;
-    }
-    free_elements(initial_ptr, token, NULL);
+    request += 2;
+
+    size_t off_to_data = request - initial_ptr;
+    size_t size_of_data = size - off_to_data;
+    req->body_size = size_of_data;
+    memmove(initial_ptr, request, size_of_data);
+    initial_ptr = realloc(initial_ptr, size_of_data);
+    req->body = initial_ptr;
+
+    free_elements(token, NULL, NULL);
     return req;
+}
+
+char *sanitize_request(char *raw_request, size_t *size)
+{
+    char *clean_req = malloc(*size);
+    char stop_at[4] = "\r\n\r\n";
+    size_t clean_i = 0;
+    for (size_t i = 0; i < *size - 4; ++i)
+    {
+        if (memcmp(raw_request + i, stop_at, 4) == 0)
+        {
+            memcpy(clean_req + clean_i, raw_request + i, *size - i);
+            *size -= i - clean_i;
+            return clean_req;
+        }
+        if (raw_request[i] != '\0')
+            clean_req[clean_i++] = raw_request[i];
+    }
+
+    // No CRLF CRLF found
+    return NULL;
 }
 
 #if defined(CUSTOM_MAIN) && defined(MAIN1)
 int main(void)
 {
-    struct request *req =
-        parser_request("GET /path/script.cgi?field1=value1&field2=value2 "
-                       "HTTP/1.1\r\n"
-                       "connexion: close\r\n"
-                       "insh: camarche\r\n"
+    char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
+                       "H\0\0\0TTP/1.1\r\n"
+                       "con\0nexion: close\r\n"
+                       "insh: c\0amarche\r\n"
                        "\r\n"
-                       "this is the body\r\n");
+                       "this is the body";
+    size_t size = sizeof(req_string) - 1;
+    struct request *req =
+        parser_request(req_string, size);
     if (req)
     {
-        printf("%s \n", req->method);
-        printf("%s \n", req->target);
-        printf("%s \n", req->version);
-        printf("%s \n", req->body);
+        printf("%s\n", req->method);
+        printf("%s\n", req->target);
+        printf("%s\n", req->version);
+        for (size_t i = 0; i < req->body_size; ++i)
+            printf("%c", req->body[i]);
+        printf("\n");
         printf("%zu\n", req->hash_map->num_keys);
         hash_map_dump(req->hash_map, " - ");
         free_request(req);

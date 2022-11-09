@@ -3,11 +3,11 @@
 
 #include <stdbool.h>
 
-#include "utils/hash_map/hash_map.h"
+#include "utils/parsers/config/config_parser.h"
 
 struct server_env
 {
-    struct hash_map *config;
+    struct server_config *config;
     int socket_fd;
     int epoll_fd;
     struct epoll_event event;

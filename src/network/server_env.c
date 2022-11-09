@@ -4,7 +4,7 @@
 
 void free_server_env(struct server_env *env, bool close_fds, bool free_obj)
 {
-    free_hash_map(env->config, true);
+    free_server_config(env->config, true);
     if (close_fds)
     {
         close(env->socket_fd);

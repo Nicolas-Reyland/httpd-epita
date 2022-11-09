@@ -23,12 +23,26 @@ static int create_and_bind(char *ip_addr, char *port);
 static bool set_socket_nonblocking_mode(int socket_fd);
 
 static struct server_env *setup_server(int num_threads,
-                                       struct hash_map *config);
+                                       struct server_config *config);
 
-_Noreturn void start_all(struct server_config *config)
+// TODO: put this in the .h file
+_Noreturn void run_server(struct server_env *env);
+
+_Noreturn void start_all(int num_threads, struct server_config *config)
 {
-    (void)config;
-    exit(EXIT_SUCCESS);
+    struct server_env *env = setup_server(num_threads, config);
+    if (env == NULL)
+    {
+        // TODO: logging (some error occured, idk man)
+        free_server_config(config, true);
+        exit(EXIT_FAILURE);
+    }
+
+    // Setup the vhosts
+    setup_vhosts(env);
+
+    // Everything is up and ready ! Get it running !!!
+    run_server(env);
 }
 
 _Noreturn void run_server(struct server_env *env)
@@ -173,7 +187,7 @@ bool set_socket_nonblocking_mode(int socket_fd)
  *
  *  Return NULL on failure.
  */
-struct server_env *setup_server(int num_threads, struct hash_map *config)
+struct server_env *setup_server(int num_threads, struct server_config *config)
 {
     struct server_env *env = malloc(sizeof(struct server_env));
     if (env == NULL)
@@ -193,8 +207,8 @@ struct server_env *setup_server(int num_threads, struct hash_map *config)
     }
 
     // First, get a socket for this config
-    int socket_fd = create_and_bind(hash_map_get(config, "ip"),
-                                    hash_map_get(config, "port"));
+    int socket_fd = create_and_bind(hash_map_get(config->global, "ip"),
+                                    hash_map_get(config->global, "port"));
     if (socket_fd == -1)
     {
         free(env);

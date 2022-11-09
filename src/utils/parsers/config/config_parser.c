@@ -170,7 +170,7 @@ void free_server_config(struct server_config *config, bool free_obj)
         config->vhosts[i] = NULL;
     }
     config->num_vhosts = 0;
-    FREE_SET_NULL(config->vhosts);
+    FREE_SET_NULL(config->vhosts)
 
     if (free_obj)
         free(config);

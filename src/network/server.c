@@ -1,3 +1,5 @@
+#include "server.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -12,11 +14,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "server_env.h"
+#include "handler.h"
 #include "utils/hash_map/hash_map.h"
-#include "utils/parsers/config/config_parser.h"
+#include "utils/mem.h"
+#include "utils/socket_utils.h"
 
-#define EPOLL_MAXEVENTS 32
+// this is just a btach size for events ...
+// not the max number of sockets in the epoll
+#define EPOLL_MAXEVENTS 64
 
 static int create_and_bind(char *ip_addr, char *port);
 
@@ -34,9 +39,6 @@ _Noreturn void start_all(int num_threads, struct server_config *config)
         free_server_config(config, true);
         exit(EXIT_FAILURE);
     }
-
-    // Setup the vhosts
-    setup_vhosts(env);
 
     // Everything is up and ready ! Get it running !!!
     run_server(env);
@@ -58,6 +60,7 @@ _Noreturn void run_server(struct server_env *env)
                 close(env->events[i].data.fd);
                 // Set things to zero/-1 no ?
                 // env->events[i].data.fd = -1;
+                continue;
             }
             // File not available for reading, so just skipping it
             if (!(env->events[i].events & EPOLLIN))
@@ -66,27 +69,27 @@ _Noreturn void run_server(struct server_env *env)
                 continue;
             }
             // Event on the server socket: means there is one more client !
-            else if (env->socket_fd == env->events[i].data.fd)
+            else if (env->server_socket_fd == env->events[i].data.fd)
             {
                 // Maybe log new client connection ?
-                add_new_client(env);
+                register_connection(env);
+                // TODO: should we read the data or something ?
             }
             // There is data to be read
             else
             {
-                size_t size;
+                size_t data_len;
                 char *data =
-                    read_from_connection(env->events[i].data.fd, &size);
+                    read_from_connection(env->events[i].data.fd, &data_len);
                 // when threading, add (i, data, size) to queue instead of
                 // doing it now, in the main loop
-                handle_incoming_data(env, i, data, size);
+                process_data(env, i, data, data_len);
             }
         }
     }
 
     // clean up
-    free(env->events);
-    close(env->socket_fd);
+    free_server_env(env, true, true);
 
     exit(EXIT_SUCCESS);
 }
@@ -174,44 +177,103 @@ bool set_socket_nonblocking_mode(int socket_fd)
     return true;
 }
 
+static int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost);
+
 /*
  * Setup the following things :
- *  - socket file descriptor
- *  - socket file descriptor mode (nonblocking)
+ *  - server & vhosts socket file descriptors
+ *  - server & vhosts socket file descriptors modes (nonblocking)
  *  - epoll file descriptor
  *  - epoll events buffer (see EPOLL_MAXEVENTS)
- *  - epoll event types
  *
  *  Return NULL on failure.
  */
 struct server_env *setup_server(int num_threads, struct server_config *config)
 {
-    struct server_env *env = malloc(sizeof(struct server_env));
-    if (env == NULL)
-    {
-        // TODO: logging (OOM)
+    if (config == NULL)
         return NULL;
-    }
 
-    // Buffer for epoll events
+    struct server_env *env = malloc(sizeof(struct server_env));
+    int *vhosts_socket_fds = calloc(config->num_vhosts, sizeof(int));
     struct epoll_event *events =
         calloc(EPOLL_MAXEVENTS, sizeof(struct epoll_event));
-    if (events == NULL)
+
+    // check allocations
+    if (env == NULL || vhosts_socket_fds || events == NULL)
     {
         free(env);
+        free(vhosts_socket_fds);
+        free(events);
         // TODO: logging (OOM)
         return NULL;
     }
 
-    // First, get a socket for this config
-    int socket_fd = create_and_bind(hash_map_get(config->global, "ip"),
-                                    hash_map_get(config->global, "port"));
-    if (socket_fd == -1)
+    // set up the epoll instance
+    int epoll_fd = epoll_create(0);
+    if (epoll_fd == -1)
     {
         free(env);
         free(events);
-        // TODO: logging (could not create socket or smthin)
+        // TODO: logging (errno ?)
         return NULL;
+    }
+
+    // set up main server
+    char *local_ip_addr = get_local_ip_addr();
+    int server_socket_fd =
+        setup_socket(epoll_fd, local_ip_addr, HTTP_PORT, false);
+    free(local_ip_addr);
+    if (server_socket_fd == -1)
+    {
+        // TODO: logging (failed setting up global)
+        FREE_SET_NULL(env, vhosts_socket_fds, events)
+        return NULL;
+    }
+
+    // set up vhosts
+    for (size_t i = 0; i < config->num_vhosts; ++i)
+    {
+        char *vhost_ip_addr = hash_map_get(config->vhosts[i], "ip");
+        char *vhost_port = hash_map_get(config->vhosts[i], "port");
+        vhosts_socket_fds[i] =
+            setup_socket(epoll_fd, vhost_ip_addr, vhost_port, true);
+
+        if (vhosts_socket_fds[i] == -1)
+        {
+            // TODO: logging (failed setting up vhost)
+
+            // close all the previously opened sockets
+            close(server_socket_fd);
+            for (size_t j = 0; j < i; ++j)
+                close(vhosts_socket_fds[j]);
+
+            FREE_SET_NULL(env, vhosts_socket_fds, events)
+            return NULL;
+        }
+    }
+
+    env->config = config;
+    env->server_socket_fd = server_socket_fd;
+    env->vhosts_socket_fds = vhosts_socket_fds;
+    env->epoll_fd = epoll_fd;
+    env->events = events;
+    env->num_threads = num_threads;
+
+    return env;
+}
+
+int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost)
+{
+    if (ip_addr == NULL || port == NULL)
+        return -1;
+
+    (void)is_vhost;
+    // First, get a socket for this config
+    int socket_fd = create_and_bind(ip_addr, port);
+    if (socket_fd == -1)
+    {
+        // TODO: logging (could not create socket or smthin)
+        return -1;
     }
 
     /*
@@ -223,30 +285,16 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
      */
     if (!set_socket_nonblocking_mode(socket_fd))
     {
-        free(env);
-        free(events);
         close(socket_fd);
         // TODO: logging (could not set socket to non-blocking mode)
-        return NULL;
+        return -1;
     }
 
     if (listen(socket_fd, SOMAXCONN) == -1)
     {
-        free(env);
-        free(events);
         close(socket_fd);
         // TODO: logging (errno)
-        return NULL;
-    }
-
-    int epoll_fd = epoll_create1(0);
-    if (epoll_fd == -1)
-    {
-        free(env);
-        free(events);
-        close(socket_fd);
-        // TODO: logging (errno ?)
-        return NULL;
+        return -1;
     }
 
     struct epoll_event event = { 0 };
@@ -262,20 +310,10 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     event.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
     {
-        free(env);
-        free(events);
         close(socket_fd);
-        close(epoll_fd);
         // TODO: logging (errno?)
-        return NULL;
+        return -1;
     }
 
-    env->config = config;
-    env->socket_fd = socket_fd;
-    env->epoll_fd = epoll_fd;
-    env->event = event;
-    env->events = events;
-    env->num_threads = num_threads;
-
-    return env;
+    return socket_fd;
 }

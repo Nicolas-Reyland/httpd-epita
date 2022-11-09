@@ -5,12 +5,14 @@
 
 #include "utils/parsers/config/config_parser.h"
 
+#define HTTP_PORT "80"
+
 struct server_env
 {
     struct server_config *config;
-    int socket_fd;
+    int server_socket_fd;
+    int *vhosts_socket_fds;
     int epoll_fd;
-    struct epoll_event event;
     struct epoll_event *events;
     int num_threads;
 };

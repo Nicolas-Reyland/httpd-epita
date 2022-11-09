@@ -16,6 +16,7 @@
 
 #include "handler.h"
 #include "utils/hash_map/hash_map.h"
+#include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
 
@@ -24,8 +25,6 @@
 #define EPOLL_MAXEVENTS 64
 
 static int create_and_bind(char *ip_addr, char *port);
-
-static bool set_socket_nonblocking_mode(int socket_fd);
 
 static struct server_env *setup_server(int num_threads,
                                        struct server_config *config);
@@ -150,31 +149,6 @@ int create_and_bind(char *ip_addr, char *port)
     freeaddrinfo(result);
 
     return socket_fd;
-}
-
-/*
- * Returns success status
- */
-bool set_socket_nonblocking_mode(int socket_fd)
-{
-    int flags;
-
-    // First, retrieve the flags associated to the socket file descriptor
-    if ((flags = fcntl(socket_fd, F_GETFL, 0)) == -1)
-    {
-        // TODO: looging (could not retrieve flags from socket fd)
-        return false;
-    }
-
-    // Set to non-blocking mode
-    flags |= O_NONBLOCK;
-    if (fcntl(socket_fd, F_SETFL, flags) == -1)
-    {
-        // TODO: logging (could not set flag to non-blocking)
-        return false;
-    }
-
-    return true;
 }
 
 static int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost);

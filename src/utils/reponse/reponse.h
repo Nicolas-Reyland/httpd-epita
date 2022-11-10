@@ -1,9 +1,10 @@
 #ifndef RESPONSE_H
 #define RESPONSE_H
 
-#include "utils/parsers/http/parser_request.h"
-#include "network/vhost.h"
 #include <stddef.h>
+
+#include "network/vhost.h"
+#include "utils/parsers/http/parser_request.h"
 
 struct response
 {

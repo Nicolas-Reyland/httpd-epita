@@ -12,10 +12,10 @@
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
-#include "utils/socket_utils.h"
-#include "utils/vector/vector.h"
 #include "utils/parsers/http/parser_request.h"
 #include "utils/reponse/reponse.h"
+#include "utils/socket_utils.h"
+#include "utils/vector/vector.h"
 
 static struct vhost *vhost_from_host_socket(struct server_env *env,
                                             int socket_fd);
@@ -126,13 +126,14 @@ void process_data(struct server_env *env, int event_index, char *data,
 
     int client_socket_fd = env->events[event_index].data.fd;
     ssize_t index;
-    struct vhost *vhost = vhost_from_client_socket(env, client_socket_fd, &index);
+    struct vhost *vhost =
+        vhost_from_client_socket(env, client_socket_fd, &index);
     char *root_dir = hash_map_get(vhost->map, "root_dir");
 
     // CODE DE CE MEC, LA
     int err = 200;
     struct request *req = parser_request(data, size, &err);
-    if(err != 200)
+    if (err != 200)
     {
         log_error("grosse erreur parsing\n");
         return;
@@ -150,7 +151,7 @@ void process_data(struct server_env *env, int event_index, char *data,
     return;
 
     // CODE PROPRE REPREND ICI
-    //write(client_socket_fd, reply, reply_size);
+    // write(client_socket_fd, reply, reply_size);
 }
 
 bool incoming_connection(struct server_env *env, int client_socket_fd)

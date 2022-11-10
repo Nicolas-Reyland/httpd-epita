@@ -25,14 +25,15 @@ Test(ParseRequest, test_nbkeys)
 
 Test(ParseRequest, perferct_request)
 {
-    char req_string[] = "HE\0AD     /p\0ath/script.cgi?field1=value1&field2=value2 "
-                        "   H\0\0\0TTP/1.1     \r\n"
-                        "con\0nexion: close     \r\n"
-                        "insh:     c\0amarche   \r\n"
-                        "key:   \0v\0\r\n"
-                        "Host:    \0v\0\r\n"
-                        "\r\n"
-                        "this \0is t\0\0he body";
+    char req_string[] =
+        "HE\0AD     /p\0ath/script.cgi?field1=value1&field2=value2 "
+        "   H\0\0\0TTP/1.1     \r\n"
+        "con\0nexion: close     \r\n"
+        "insh:     c\0amarche   \r\n"
+        "key:   \0v\0\r\n"
+        "Host:    \0v\0\r\n"
+        "\r\n"
+        "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
     int err = 0;
     struct request *req = parser_request(req_string, size, &err);
@@ -183,14 +184,15 @@ Test(ParseRequest, test_invalid)
 
 Test(ParseRequest, option_invalid)
 {
-    char req_string[] = "HE\0AD     /p\0ath/script.cgi?field1=value1&field2=value2 "
-                        "   H\0\0\0TTP/1.1     \r\n"
-                        "con\0nexion: close     \r\n"
-                        "insh:     c\0amarche   \r\n"
-                        "key:   \0v\0\r\n"
-                        "Host :    \0v\0\r\n"
-                        "\r\n"
-                        "this \0is t\0\0he body";
+    char req_string[] =
+        "HE\0AD     /p\0ath/script.cgi?field1=value1&field2=value2 "
+        "   H\0\0\0TTP/1.1     \r\n"
+        "con\0nexion: close     \r\n"
+        "insh:     c\0amarche   \r\n"
+        "key:   \0v\0\r\n"
+        "Host :    \0v\0\r\n"
+        "\r\n"
+        "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
     int err = 0;
     struct request *req = parser_request(req_string, size, &err);

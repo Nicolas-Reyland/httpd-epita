@@ -53,15 +53,15 @@ struct request *init_request(void)
 size_t end_token(char *request, size_t index, char *delim)
 {
     size_t i = index;
-    if(!delim)
+    if (!delim)
     {
         while (request[i] != '\0' && request[i] != ' ')
             i++;
         return i;
     }
     while (request[i] != '\0' && request[i] != ' ' && request[i] != *delim)
-            i++;
-        return i;
+        i++;
+    return i;
 }
 
 /*
@@ -319,7 +319,7 @@ struct request *sub_parser_request(char *raw_request, size_t size)
         tokenise_option(token, req, &err);
         if (err == 1)
         {
-            free_elements(token,initial_ptr,req);
+            free_elements(token, initial_ptr, req);
             return NULL;
         }
         request += 2;

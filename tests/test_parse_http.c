@@ -23,12 +23,12 @@ Test(parser_request_test_suit, test_nbkeys)
 
 Test(parser_request_test_suit, perferct_request)
 {
-    char req_string[] = "HE\0AD /p\0ath/script.cgi?field1=value1&field2=value2 "
-                        "H\0\0\0TTP/1.1\r\n"
-                        "con\0nexion: close\r\n"
-                        "insh: c\0amarche\r\n"
-                        "key     :\0v\0\r\n"
-                        "Host     :\0v\0\r\n"
+    char req_string[] = "HE\0AD     /p\0ath/script.cgi?field1=value1&field2=value2 "
+                        "   H\0\0\0TTP/1.1     \r\n"
+                        "    con\0nexion: close     \r\n"
+                        "  insh    :     c\0amarche   \r\n"
+                        " key     :   \0v\0\r\n"
+                        " Host     :    \0v\0\r\n"
                         "\r\n"
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;

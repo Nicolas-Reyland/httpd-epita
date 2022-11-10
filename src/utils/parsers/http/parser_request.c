@@ -406,6 +406,7 @@ int main(void)
                         "\r\n"
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
+    printf("%zu\n",size);
     int err = 0;
     struct request *req = parser_request(req_string, size, &err);
     if (req && err == 0)

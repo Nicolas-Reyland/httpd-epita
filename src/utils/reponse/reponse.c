@@ -241,6 +241,7 @@ struct response *parsing_http(char *request_raw, size_t size, struct vhost *vhos
         realloc_and_concat(resp,get_date_gmt(), true);
         return resp;
     }
+    free_request(req);
     struct response *resp = create_response(&err, vhost, req);
     return resp;
 }

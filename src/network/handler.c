@@ -134,6 +134,10 @@ void close_connection(struct server_env *env, int client_socket_fd)
 {
     log_message(LOG_STDOUT, "%s: Closing connection with %d\n", __func__,
                 client_socket_fd);
+    // remove link between vhost and client
+    struct vhost *vhost = vhost_from_host_socket(client_socket_fd);
+    size_t index = vector_find(vhosts->client, client_socket_fd);
+    vector_remove(vhosts->clients, index);
     // Remove (deregister) the file descriptor
     epoll_ctl(env->epoll_fd, EPOLL_CTL_DEL, client_socket_fd, NULL);
     // close the connection on our end, too

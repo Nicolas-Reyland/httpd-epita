@@ -55,6 +55,7 @@ _Noreturn void run_server(struct server_env *env)
         for (int i = 0; i < num_events; ++i)
         {
             // Error has occured on file descriptor, or client closed connection
+            int socket_fd = env->events[i].data.fd;
             if (env->events[i].events & (EPOLLHUP | EPOLLERR))
             {
                 // logging (errno ?)
@@ -71,37 +72,25 @@ _Noreturn void run_server(struct server_env *env)
                 continue;
             }
             // Event on the server socket: means there is one more client !
-            else if (env->server_socket_fd == env->events[i].data.fd)
+            else if (incoming_connection(env, socket_fd))
             {
                 // Maybe log new client connection ?
-                register_connection(env);
-                // TODO: should we read the data or something ?
+                register_connection(env, socket_fd);
             }
             // There is data to be read
             else
             {
-                int client_socket_fd = env->events[i].data.fd;
                 bool alive;
                 size_t data_len;
-                char *data =
-                    read_from_connection(client_socket_fd, &data_len, &alive);
+                char *data = read_from_connection(socket_fd, &data_len, &alive);
                 if (!alive)
                 {
-                    // Remove (deregister) the file descriptor
-                    epoll_ctl(env->epoll_fd, EPOLL_CTL_DEL, client_socket_fd,
-                              NULL);
-                    // close the connection on our end, too
-                    close(client_socket_fd);
+                    close_connection(env, socket_fd);
+                    continue;
                 }
-                if (data == NULL)
-                {
-                    if (data_len != 1)
-                        log_message(LOG_STDOUT, "Empty message\n");
-                }
-                else
-                    // when threading, add (i, data, size) to queue instead of
-                    // doing it now, in the main loop
-                    process_data(env, i, data, data_len);
+                // when threading, add (i, data, size) to queue instead of
+                // doing it now, in the main loop
+                process_data(env, i, data, data_len);
             }
         }
     }
@@ -117,8 +106,7 @@ int create_and_bind(char *ip_addr, char *port)
     struct addrinfo hints = { 0 }; // init all fields to zero
     // hints.ai_flags = AI_PASSIVE; // All interfaces
     hints.ai_family = AF_INET; // IPv4 choices
-    // hints.ai_protocol = 0; // Any protocol, but may want to restrict to http
-    // ?
+    hints.ai_protocol = IPPROTO_TCP; // TCP Protocol only
     hints.ai_socktype = SOCK_STREAM; // TCP socket
 
     // IP addr

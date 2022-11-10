@@ -252,9 +252,13 @@ void free_elements(char *request, char *token, struct request *req)
 
 static char *sanitize_request(char *raw_request, size_t *size)
 {
+    if (*size < 3 || raw_request == NULL)
+        return NULL;
+
     char *clean_req = malloc(*size);
     char stop_at[4] = "\r\n\r\n";
     size_t clean_i = 0;
+
     for (size_t i = 0; i < *size - 3; ++i)
     {
         if (memcmp(raw_request + i, stop_at, 4) == 0)

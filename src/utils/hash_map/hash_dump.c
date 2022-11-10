@@ -2,14 +2,19 @@
 
 #include "hash_map.h"
 
-void hash_map_dump(struct hash_map *hash_map, const char *prefix)
+void hash_map_dump(struct hash_map *map, const char *prefix)
 {
-    if (hash_map == NULL)
+    if (map == NULL)
         return;
 
-    for (size_t i = 0; i < hash_map->size; ++i)
+    for (size_t i = 0; i < map->num_keys; ++i)
+        printf("%s%s: %s\n", prefix, map->keys[i],
+               hash_map_get(map, map->keys[i]));
+
+#if 0
+    for (size_t i = 0; i < map->size; ++i)
     {
-        struct pair_list *list = hash_map->data[i];
+        struct pair_list *list = map->data[i];
         if (list == NULL)
             continue;
         printf("%s%s: %s", prefix == NULL ? "" : prefix, list->key,
@@ -18,4 +23,5 @@ void hash_map_dump(struct hash_map *hash_map, const char *prefix)
             printf("\n%s%s: %s", prefix, list->key, list->value);
         putchar('\n');
     }
+#endif
 }

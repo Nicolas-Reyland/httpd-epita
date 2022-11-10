@@ -58,9 +58,7 @@ _Noreturn void run_server(struct server_env *env)
             {
                 // logging (errno ?)
                 log_error("Error occured in epoll: %d\n", env->events[i]);
-                close(env->events[i].data.fd);
-                // Set things to zero/-1 no ?
-                // env->events[i].data.fd = -1;
+                close_connection(env, socket_fd);
                 continue;
             }
             // File not available for reading, so just skipping it
@@ -103,8 +101,9 @@ static int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost);
 
 /*
  * Setup the following things :
- *  - server & vhosts socket file descriptors
- *  - server & vhosts socket file descriptors modes (nonblocking)
+ *  - vhosts socket file descriptors
+ *  - vhosts socket file descriptors modes (nonblocking)
+ *  - vhosts client fds
  *  - epoll file descriptor
  *  - epoll events buffer (see EPOLL_MAXEVENTS)
  *
@@ -117,13 +116,15 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
 
     struct server_env *env = malloc(sizeof(struct server_env));
     int *vhosts_socket_fds = calloc(config->num_vhosts, sizeof(int));
+    int *vhost_client_socket_fds = calloc(config->num_vhosts, sizeof(int));
     struct epoll_event *events =
         calloc(EPOLL_MAXEVENTS, sizeof(struct epoll_event));
 
     // check allocations
-    if (env == NULL || vhosts_socket_fds == NULL || events == NULL)
+    if (env == NULL || vhosts_socket_fds == NULL
+        || vhost_client_socket_fds == NULL || events == NULL)
     {
-        FREE_SET_NULL(env, vhosts_socket_fds, events);
+        FREE_SET_NULL(env, vhosts_socket_fds, vhost_client_socket_fds, events);
         log_error("Out of memory (%s)\n", __func__);
         return NULL;
     }
@@ -134,18 +135,6 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     {
         FREE_SET_NULL(env, vhosts_socket_fds, events);
         log_error("Could not create epoll file descriptor\n");
-        return NULL;
-    }
-
-    // set up main server
-    char *local_ip_addr = get_local_ip_addr();
-    int server_socket_fd =
-        setup_socket(epoll_fd, local_ip_addr, HTTP_PORT, false);
-    free(local_ip_addr);
-    if (server_socket_fd == -1)
-    {
-        log_error("Could not setup the global server\n");
-        FREE_SET_NULL(env, vhosts_socket_fds, events)
         return NULL;
     }
 
@@ -164,7 +153,6 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
             log_error("Could not setup the vhost server n%zu\n", i + 1);
 
             // close all the previously opened sockets
-            close(server_socket_fd);
             for (size_t j = 0; j < i; ++j)
                 close(vhosts_socket_fds[j]);
 
@@ -174,8 +162,8 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     }
 
     env->config = config;
-    env->server_socket_fd = server_socket_fd;
     env->vhosts_socket_fds = vhosts_socket_fds;
+    env->vhosts_client_socket_fds = vhost_client_socket_fds;
     env->epoll_fd = epoll_fd;
     env->events = events;
     env->num_threads = num_threads;

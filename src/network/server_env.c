@@ -9,7 +9,7 @@ void free_server_env(struct server_env *env, bool close_fds, bool free_obj)
 {
     if (close_fds)
     {
-        CLOSE_ALL(env->server_socket_fd, env->epoll_fd);
+        CLOSE_ALL(env->epoll_fd);
         for (size_t i = 0; i < env->config->num_vhosts; ++i)
         {
             CLOSE_ALL(env->vhosts_socket_fds[i]);

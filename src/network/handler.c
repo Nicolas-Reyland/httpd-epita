@@ -18,6 +18,9 @@
 static struct vhost *vhost_from_host_socket(struct server_env *env,
                                             int socket_fd);
 
+static struct vhost *vhost_from_client_socket(struct server_env *env,
+                                            int socket_fd, ssize_t *index);
+
 void register_connection(struct server_env *env, int host_socket_fd)
 {
     // get vhost associated to the socket fd
@@ -92,6 +95,18 @@ struct vhost *vhost_from_host_socket(struct server_env *env, int socket_fd)
     return NULL;
 }
 
+struct vhost *vhost_from_client_socket(struct server_env *env, int socket_fd, ssize_t *index)
+{
+    for (size_t i = 0; i < env->config->num_vhosts; ++i)
+    {
+        *index = vector_find(env->vhosts[i].clients, socket_fd);
+        if (*index != -1)
+            return env->vhosts+i;
+    }
+
+    return NULL;
+}
+
 void process_data(struct server_env *env, int event_index, char *data,
                   size_t size)
 {
@@ -134,12 +149,17 @@ void close_connection(struct server_env *env, int client_socket_fd)
 {
     log_message(LOG_STDOUT, "%s: Closing connection with %d\n", __func__,
                 client_socket_fd);
-    // remove link between vhost and client
-    struct vhost *vhost = vhost_from_host_socket(client_socket_fd);
-    size_t index = vector_find(vhosts->client, client_socket_fd);
-    vector_remove(vhosts->clients, index);
     // Remove (deregister) the file descriptor
     epoll_ctl(env->epoll_fd, EPOLL_CTL_DEL, client_socket_fd, NULL);
     // close the connection on our end, too
     close(client_socket_fd);
+    // remove link between vhost and client
+    ssize_t index = -1;
+    struct vhost *vhost = vhost_from_client_socket(env, client_socket_fd, &index);
+    if (vhost == NULL || index == -1)
+    {
+        log_error("%s: Could not find host associated to socket %d\n", __func__, client_socket_fd);
+        return;
+    }
+    vector_remove(vhost->clients, index);
 }

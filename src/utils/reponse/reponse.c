@@ -234,6 +234,7 @@ struct response *parsing_http(char *request_raw, size_t size, struct vhost *vhos
     struct request *req = parser_request(request_raw, size, &err);
     if (err != 200)
     {
+        free_request(req);
         struct response *resp = init_response();
         if (!resp)
             return NULL;
@@ -241,8 +242,8 @@ struct response *parsing_http(char *request_raw, size_t size, struct vhost *vhos
         realloc_and_concat(resp,get_date_gmt(), true);
         return resp;
     }
-    free_request(req);
     struct response *resp = create_response(&err, vhost, req);
+    free_request(req);
     return resp;
 }
 

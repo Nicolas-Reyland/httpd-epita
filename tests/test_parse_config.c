@@ -8,14 +8,13 @@
 
 #define CR_ASSERT_HASH_MAP_EQ(NumKeys, Keys, Values, HashMap)                  \
     CR_ASSERT_NOT_NULL_EXPANDED(HashMap);                                      \
-    CR_ASSERT_EQ_DIGIT_EXPANDED(NumKeys, (HashMap)->num_keys);                 \
-    for (size_t i = 0; i < NumKeys; ++i)                                       \
+    CR_ASSERT_EQ_DIGIT_ZU_EXPANDED(NumKeys, (HashMap)->num_keys);              \
+    for (size_t j = 0; j < NumKeys; ++j)                                       \
     {                                                                          \
-        char *key = (HashMap)->keys[i];                                        \
-        CR_ASSERT_NOT_NULL_EXPANDED(key);                                      \
-        CR_ASSERT_STR_EQ_EXPANDED(Keys[i], key);                               \
-        char *actual_value = hash_map_get((HashMap), key);                     \
-        CR_ASSERT_STR_EQ_EXPANDED(Values[i], actual_value);                    \
+        CR_ASSERT_NOT_NULL_EXPANDED((HashMap)->keys[j]);                       \
+        CR_ASSERT_STR_EQ_EXPANDED(Keys[j], (HashMap)->keys[j]);                \
+        char *actual_value = hash_map_get((HashMap), (HashMap)->keys[j]);      \
+        CR_ASSERT_STR_EQ_EXPANDED(Values[j], actual_value);                    \
     }
 
 #define TEST_SERVER_CONFIG                                                     \
@@ -24,23 +23,16 @@
                           actual->global)                                      \
     free_hash_map(actual->global, true);                                       \
     CR_ASSERT_NOT_NULL_EXPANDED(actual->vhosts);                               \
-    CR_ASSERT_EQ_DIGIT_EXPANDED(NUM_VHOSTS, actual->num_vhosts);               \
+    CR_ASSERT_EQ_DIGIT_ZU_EXPANDED((size_t)NUM_VHOSTS, actual->num_vhosts);    \
     for (size_t i = 0; i < NUM_VHOSTS; ++i)                                    \
     {                                                                          \
-        struct hash_map *map = actual->vhosts[i];                              \
-        CR_ASSERT_NOT_NULL_EXPANDED(map);                                      \
+        struct hash_map *vhost_map = actual->vhosts[i];                        \
+        CR_ASSERT_NOT_NULL_EXPANDED(vhost_map);                                \
         void *void_arr = vhost_keys[i];                                        \
         size_t expected_num_keys = length_of_null_terminated(void_arr);        \
-        CR_ASSERT_EQ_DIGIT_EXPANDED(expected_num_keys, map->num_keys);         \
-        for (size_t j = 0; j < expected_num_keys; ++j)                         \
-        {                                                                      \
-            char *key = actual->vhosts[i]->keys[j];                            \
-            CR_ASSERT_NOT_NULL_EXPANDED(key);                                  \
-            CR_ASSERT_STR_EQ_EXPANDED(vhost_keys[i][j], key);                  \
-            char *actual_vhost_value = hash_map_get(actual->vhosts[i], key);   \
-            CR_ASSERT_STR_EQ_EXPANDED(vhost_values[i][j], actual_vhost_value); \
-        }                                                                      \
-        free_hash_map(map, true);                                              \
+        CR_ASSERT_HASH_MAP_EQ(expected_num_keys, vhost_keys[i],                \
+                              vhost_values[i], vhost_map)                      \
+        free_hash_map(vhost_map, true);                                        \
     }                                                                          \
     free(actual->vhosts);                                                      \
     free(actual);
@@ -108,7 +100,7 @@ Test(ParseConfig, no_vhosts)
     CR_ASSERT_HASH_MAP_EQ(global_num_keys, global_keys, global_values,
                           actual->global)
 
-    CR_ASSERT_EQ_DIGIT_EXPANDED(0, actual->num_vhosts);
+    CR_ASSERT_EQ_DIGIT_ZU_EXPANDED((size_t)NUM_VHOSTS, actual->num_vhosts);
     CR_ASSERT_NULL_EXPANDED(actual->vhosts);
 
     free_server_config(actual, true);

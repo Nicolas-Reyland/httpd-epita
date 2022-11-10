@@ -13,5 +13,6 @@ struct response
 };
 
 struct response *create_response(int *err, char *vhost, char *target);
+void free_response(struct response *resp);
 
 #endif /* !RESPONSE_H */

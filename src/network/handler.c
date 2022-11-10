@@ -14,6 +14,8 @@
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
 #include "utils/vector/vector.h"
+#include "utils/parsers/http/parser_request.h"
+#include "utils/reponse/reponse.h"
 
 static struct vhost *vhost_from_host_socket(struct server_env *env,
                                             int socket_fd);
@@ -117,24 +119,38 @@ void process_data(struct server_env *env, int event_index, char *data,
         return;
     }
 
-    //
-
     printf("Got: '''\n");
     for (size_t i = 0; i < size; ++i)
         printf("%c", data[i]);
     printf("\n'''\n");
 
-    const char reply[] = "HTTP/1.0 200 OK\r\n"
-                         "Connection: close\r\n"
-                         "Content-Length: 19\r\n"
-                         "\r\n"
-                         "this is the body !\n";
-
     int client_socket_fd = env->events[event_index].data.fd;
-    size_t reply_size = sizeof(reply) - 1;
+    ssize_t index;
+    struct vhost *vhost = vhost_from_client_socket(env, client_socket_fd, &index);
+    char *root_dir = hash_map_get(vhost->map, "root_dir");
 
-    //
-    write(client_socket_fd, reply, reply_size);
+    // CODE DE CE MEC, LA
+    int err = 200;
+    struct request *req = parser_request(data, size, &err);
+    if(err != 200)
+    {
+        log_error("grosse erreur parsing\n");
+        return;
+    }
+    struct response *resp = create_response(&err, root_dir, req->target);
+    write(client_socket_fd, resp->res, resp->res_len);
+
+    printf("Got: '''\n");
+    for (size_t i = 0; i < resp->res_len; ++i)
+        printf("%c", resp->res[i]);
+    printf("\n'''\n");
+
+    free_request(req);
+    free_response(resp);
+    return;
+
+    // CODE PROPRE REPREND ICI
+    //write(client_socket_fd, reply, reply_size);
 }
 
 bool incoming_connection(struct server_env *env, int client_socket_fd)

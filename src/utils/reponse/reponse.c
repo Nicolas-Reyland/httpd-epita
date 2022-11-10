@@ -11,8 +11,6 @@ static char *get_date_gmt(void);
 
 static struct response *init_response(void);
 
-static void free_reponse(struct response *resp);
-
 static void realloc_and_concat(struct response *resp, char *to_concat, bool free_obj);
 
 static char *status_code(int *err);
@@ -36,7 +34,7 @@ struct response *init_response(void)
     return response;
 }
 
-void free_reponse(struct response *resp)
+void free_response(struct response *resp)
 {
     if(!resp)
         return;
@@ -174,7 +172,7 @@ void realloc_and_concat(struct response *resp, char *to_concat, bool free_obj)
 
 //char *create_response(int *err, struct vhost *vhost, struct request *req)
 struct response *create_response(int *err, char *vhost, char *target)
-{    
+{
     struct response *resp = init_response();
     if (!resp)
         return NULL;

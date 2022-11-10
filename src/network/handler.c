@@ -7,11 +7,25 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
+#include "utils/mem.h"
 #include "utils/socket_utils.h"
 
 void register_connection(struct server_env *env, int host_socket_fd)
 {
+    // Get index of vhost associated to the socket fd
+    size_t vhost_index;
+    for (vhost_index = 0; vhost_index < env->config->num_vhosts; ++vhost_index)
+        if (env->vhosts_socket_fds[vhost_index] == host_socket_fd)
+            break;
+    if (vhost_index == env->config->num_vhosts)
+    {
+        log_error("Could not find host from socket_fd %d\n", host_socket_fd);
+        return;
+    }
+    struct hash_map *vhost_map = env->config->vhosts[vhost_index];
+
     // There might be multiple new clients
     while (true)
     {
@@ -22,33 +36,31 @@ void register_connection(struct server_env *env, int host_socket_fd)
         if (client_socket_fd == -1)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                // TODO: logging (processed all incoming connections);
                 break;
-            }
             else
             {
-                // TODO: logging (error)
+                log_error("Could not accept connection for host %s\n",
+                          hash_map_get(vhost_map, "server_name"));
                 break;
             }
         }
 
-#if CUSTOM_DEBUG
         char host_buffer[256], port_buffer[256];
         if (getnameinfo(&in_addr, in_len, host_buffer, sizeof(host_buffer),
                         port_buffer, sizeof(port_buffer),
                         NI_NUMERICHOST | NI_NUMERICSERV)
             == 0)
         {
-            printf("Accepted connection on descriptor %d "
-                   "(host=%s, port=%s)\n",
-                   client_socket_fd, host_buffer, port_buffer);
+            log_message(LOG_STDOUT | LOG_DEBUG,
+                        "Accepted connection on descriptor %d @ %s:%s\n",
+                        client_socket_fd, host_buffer, port_buffer);
         }
-#endif
 
         if (!set_socket_nonblocking_mode(client_socket_fd))
         {
-            // TODO: logging
+            log_error("%s: Could not set socket to non-blocking mode\n",
+                      __func__);
+            CLOSE_ALL(client_socket_fd);
             continue;
         }
 
@@ -58,9 +70,15 @@ void register_connection(struct server_env *env, int host_socket_fd)
         if (epoll_ctl(env->epoll_fd, EPOLL_CTL_ADD, client_socket_fd, &event)
             == -1)
         {
-            // TODO: logging (errno)
+            CLOSE_ALL(client_socket_fd);
+            log_error("%s: Could not register new client %d to epoll\n",
+                      __func__, client_socket_fd);
             continue;
         }
+
+        // register client socket fd to vhost
+        int *fds = env->vhost_client_socket_fds[vhost_index];
+        fds = realloc(fds)
     }
 }
 
@@ -80,9 +98,9 @@ void process_data(struct server_env *env, int event_index, char *data,
 
     const char reply[] = "HTTP/1.0 200 OK\r\n"
                          "Connection: close\r\n"
-                         "Content-Length: 21\r\n"
+                         "Content-Length: 19\r\n"
                          "\r\n"
-                         "this is the body !!!\n";
+                         "this is the body !\n";
 
     int client_socket_fd = env->events[event_index].data.fd;
     size_t reply_size = sizeof(reply) - 1;
@@ -92,7 +110,7 @@ void process_data(struct server_env *env, int event_index, char *data,
 bool incoming_connection(struct server_env *env, int client_socket_fd)
 {
     for (size_t i = 0; i < env->config->num_vhosts; ++i)
-        if (client_socket_fd == env->vhosts_socket_fds[i])
+        if (client_socket_fd == env->vhosts[i].socket_fd[i])
             return true;
 
     return false;

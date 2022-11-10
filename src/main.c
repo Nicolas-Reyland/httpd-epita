@@ -12,19 +12,6 @@ int main(int argc, char **argv)
         return 4;
 
     struct server_config *config = parse_server_config(argv[1]);
-    if (config == NULL)
-    {
-        puts("(null)");
-        return 0;
-    }
-
-    puts("global :");
-    hash_map_dump(config->global, " - ");
-    for (size_t i = 0; i < config->num_vhosts; ++i)
-    {
-        printf("vhosts %zu :\n", i);
-        hash_map_dump(config->vhosts[i], " - ");
-    }
 
     start_all(1, config);
 

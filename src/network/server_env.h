@@ -3,14 +3,13 @@
 
 #include <stdbool.h>
 
+#include "network/vhost.h"
 #include "utils/parsers/config/config_parser.h"
-
-#define HTTP_PORT "80"
 
 struct server_env
 {
     struct server_config *config;
-    int *vhosts_socket_fds;
+    struct vhost *vhosts;
     int epoll_fd;
     struct epoll_event *events;
     int num_threads;

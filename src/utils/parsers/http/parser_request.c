@@ -14,8 +14,6 @@ static size_t next_token(char *request, size_t index, char *delim);
 
 static char *my_strcpy(char *request, size_t begin, size_t end);
 
-static void free_request(struct request *req);
-
 static struct request *init_request(void);
 
 static struct request *parse_request_header(char *request);
@@ -257,7 +255,7 @@ static char *sanitize_request(char *raw_request, size_t *size)
     char *clean_req = malloc(*size);
     char stop_at[4] = "\r\n\r\n";
     size_t clean_i = 0;
-    for (size_t i = 0; i < *size - 4; ++i)
+    for (size_t i = 0; i < *size - 3; ++i)
     {
         if (memcmp(raw_request + i, stop_at, 4) == 0)
         {
@@ -270,6 +268,7 @@ static char *sanitize_request(char *raw_request, size_t *size)
     }
 
     // No CRLF CRLF found
+    free(clean_req);
     return NULL;
 }
 
@@ -282,6 +281,8 @@ static char *sanitize_request(char *raw_request, size_t *size)
 struct request *sub_parser_request(char *raw_request, size_t size)
 {
     char *request = sanitize_request(raw_request, &size);
+    if (!request)
+        return NULL;
     char *initial_ptr = request;
 
     char *token = token_from_class(&request, is_not_cr, NULL);
@@ -396,7 +397,7 @@ struct request *parser_request(char *raw_request, size_t size, int *err)
 #if defined(CUSTOM_MAIN) && defined(MAIN1)
 int main(void)
 {
-    char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
+    char req_string[] = "HEAD /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
                         "con\0nexion: close\r\n"
                         "insh: c\0amarche\r\n"

@@ -16,5 +16,6 @@ struct request
 };
 
 struct request *parser_request(char *raw_request, size_t size, int *err);
+void free_request(struct request *req);
 
 #endif /* !PARSER_REQUEST_H */

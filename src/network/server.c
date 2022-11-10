@@ -25,8 +25,6 @@
 // not the max number of sockets in the epoll
 #define EPOLL_MAXEVENTS 64
 
-static int create_and_bind(char *ip_addr, char *port);
-
 static struct server_env *setup_server(int num_threads,
                                        struct server_config *config);
 
@@ -101,74 +99,6 @@ _Noreturn void run_server(struct server_env *env)
     exit(EXIT_SUCCESS);
 }
 
-int create_and_bind(char *ip_addr, char *port)
-{
-    struct addrinfo hints = { 0 }; // init all fields to zero
-    // hints.ai_flags = AI_PASSIVE; // All interfaces
-    hints.ai_family = AF_INET; // IPv4 choices
-    hints.ai_protocol = IPPROTO_TCP; // TCP Protocol only
-    hints.ai_socktype = SOCK_STREAM; // TCP socket
-
-    // IP addr
-    struct sockaddr_in addr_in = { 0 };
-    if (!inet_aton(ip_addr, &addr_in.sin_addr))
-    {
-        // logging (invalid ip adddress)
-        log_error("Could not retrieve ip address from string '%s'\n", ip_addr);
-        return -1;
-    }
-    void *addr_ptr = &addr_in;
-    hints.ai_addr = addr_ptr;
-    hints.ai_addrlen = sizeof(addr_in);
-
-    int gai_err_code;
-    struct addrinfo *result;
-    if ((gai_err_code = getaddrinfo(NULL, port, &hints, &result)) != 0)
-    {
-        log_error(
-            "Could not get address info from port '%s' with error: ''%s'\n",
-            port, gai_strerror(gai_err_code));
-        freeaddrinfo(result);
-        return -1;
-    }
-
-    int socket_fd;
-    struct addrinfo *addr = result;
-    // Test all the potenntial addresses
-    for (; addr != NULL; addr = addr->ai_next)
-    {
-        if ((socket_fd =
-                 socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol))
-            == -1)
-            continue;
-
-        // TODO: only for vhosts & check for errors here
-        int override = 1;
-        setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &override, sizeof(int));
-
-        if (bind(socket_fd, addr->ai_addr, addr->ai_addrlen) == 0)
-            // Successful bind
-            break;
-
-        // Could not bind, so closing it
-        close(socket_fd);
-    }
-
-    // clean up
-    freeaddrinfo(result);
-
-    if (addr == NULL)
-    {
-        log_error("No suitable address found\n");
-        if (errno != 0)
-            warn(__func__);
-        // logging (no suitable address)
-        return -1;
-    }
-
-    return socket_fd;
-}
-
 static int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost);
 
 /*
@@ -224,6 +154,8 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     {
         char *vhost_ip_addr = hash_map_get(config->vhosts[i], "ip");
         char *vhost_port = hash_map_get(config->vhosts[i], "port");
+        log_message(LOG_STDOUT | LOG_DEBUG, "Adding vhost @ %s:%s\n",
+                    vhost_ip_addr, vhost_port);
         vhosts_socket_fds[i] =
             setup_socket(epoll_fd, vhost_ip_addr, vhost_port, true);
 
@@ -251,6 +183,8 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     return env;
 }
 
+static int create_socket(char *ip_addr, char *port, bool is_vhost);
+
 int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost)
 {
     if (ip_addr == NULL || port == NULL)
@@ -258,7 +192,7 @@ int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost)
 
     (void)is_vhost;
     // First, get a socket for this config
-    int socket_fd = create_and_bind(ip_addr, port);
+    int socket_fd = create_socket(ip_addr, port, is_vhost);
     if (socket_fd == -1)
     {
         // TODO: logging (could not create socket or smthin)
@@ -301,6 +235,82 @@ int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost)
     {
         close(socket_fd);
         // TODO: logging (errno?)
+        return -1;
+    }
+
+    return socket_fd;
+}
+
+int create_socket(char *ip_addr, char *port, bool is_vhost)
+{
+    struct addrinfo hints = { 0 }; // init all fields to zero
+    hints.ai_flags = AI_PASSIVE; // All interfaces
+    hints.ai_family = AF_INET; // IPv4 choices
+    hints.ai_protocol = IPPROTO_TCP; // TCP Protocol only
+    hints.ai_socktype = SOCK_STREAM; // TCP socket
+
+    // IP addr
+    struct sockaddr_in addr_in = { 0 };
+    if (!inet_aton(ip_addr, &addr_in.sin_addr))
+    {
+        // logging (invalid ip adddress)
+        log_error("Could not retrieve ip address from string '%s'\n", ip_addr);
+        return -1;
+    }
+    addr_in.sin_family = AF_INET;
+    addr_in.sin_port = htons(strtol(port, NULL, 10));
+    void *addr_ptr = &addr_in;
+    hints.ai_addr = addr_ptr;
+    hints.ai_addrlen = sizeof(struct sockaddr_in);
+
+    int gai_err_code;
+    struct addrinfo *result;
+    if ((gai_err_code = getaddrinfo(NULL, port, &hints, &result)) != 0)
+    {
+        log_error(
+            "Could not get address info from port '%s' with error: ''%s'\n",
+            port, gai_strerror(gai_err_code));
+        freeaddrinfo(result);
+        return -1;
+    }
+
+    int socket_fd;
+    struct addrinfo *addr = result;
+    // Test all the potenntial addresses
+    for (; addr != NULL; addr = addr->ai_next)
+    {
+        if ((socket_fd =
+                 socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol))
+            == -1)
+            continue;
+
+        // TODO: only for vhost, or also for the global server ?
+        if (is_vhost || true)
+        {
+            int override = 1;
+            if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &override,
+                           sizeof(int))
+                == -1)
+                continue;
+        }
+
+        if (bind(socket_fd, addr_ptr, sizeof(struct sockaddr_in)) == 0)
+            // Successful bind
+            break;
+
+        // Could not bind, so closing it
+        close(socket_fd);
+    }
+
+    // clean up
+    freeaddrinfo(result);
+
+    if (addr == NULL)
+    {
+        log_error("No suitable address found\n");
+        if (errno != 0)
+            warn(__func__);
+        // logging (no suitable address)
         return -1;
     }
 

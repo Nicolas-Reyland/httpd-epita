@@ -31,12 +31,14 @@ char *read_from_connection(int socket_fd, size_t *data_len, bool *alive)
     }
     if (num_read == 0)
     {
+        free(buffer);
         *alive = false;
         *data_len = 0;
         return NULL;
     }
     if (num_read == -1 && errno != EAGAIN)
     {
+        free(buffer);
         log_error("Error occurred in data reading\n");
         warn(__func__);
         *data_len = 1;

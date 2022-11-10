@@ -102,6 +102,21 @@ struct vector *vector_reset(struct vector *v, size_t n)
 }
 
 /*
+** Returns the index of 'elt' in 'v' if it present, and -1 otherwise.
+**/
+ssize_t vector_find(struct vector *v, int elt)
+{
+    if (v == NULL)
+        return -1;
+
+    for (size_t i = 0; i < v->size; ++i)
+        if (v->data[i] == elt)
+            return i;
+
+    return -1;
+}
+
+/*
 ** Remove the element at the index `i`.
 ** Replace it with the last element.
 ** Returns `NULL` if an error occured.

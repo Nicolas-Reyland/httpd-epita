@@ -2,6 +2,7 @@
 #define VECTOR_H
 
 #include <stddef.h>
+#include <sys/types.h>
 
 struct vector
 {
@@ -48,6 +49,11 @@ void vector_print(const struct vector *v);
 ** Returns `NULL` if an error occured.
 */
 struct vector *vector_reset(struct vector *v, size_t n);
+
+/*
+** Returns the index of 'elt' in 'v' if it present, and -1 otherwise.
+**/
+ssize_t vector_find(struct vector *v, int elt);
 
 /*
 ** Remove the element at the index `i`.

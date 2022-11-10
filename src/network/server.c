@@ -1,6 +1,7 @@
 #include "server.h"
 
 #include <arpa/inet.h>
+#include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -34,10 +35,11 @@ _Noreturn void start_all(int num_threads, struct server_config *config)
     struct server_env *env = setup_server(num_threads, config);
     if (env == NULL)
     {
-        // TODO: logging (some error occured, idk man)
+        log_error("Could not setup the server. Exiting.\n");
         free_server_config(config, true);
         exit(EXIT_FAILURE);
     }
+    log_message(LOG_STDOUT | LOG_INFO, "Setup done. Starting server.\n");
 
     // Everything is up and ready ! Get it running !!!
     run_server(env);
@@ -78,12 +80,28 @@ _Noreturn void run_server(struct server_env *env)
             // There is data to be read
             else
             {
+                int client_socket_fd = env->events[i].data.fd;
+                bool alive;
                 size_t data_len;
                 char *data =
-                    read_from_connection(env->events[i].data.fd, &data_len);
-                // when threading, add (i, data, size) to queue instead of
-                // doing it now, in the main loop
-                process_data(env, i, data, data_len);
+                    read_from_connection(client_socket_fd, &data_len, &alive);
+                if (!alive)
+                {
+                    // Remove (deregister) the file descriptor
+                    epoll_ctl(env->epoll_fd, EPOLL_CTL_DEL, client_socket_fd,
+                              NULL);
+                    // close the connection on our end, too
+                    close(client_socket_fd);
+                }
+                if (data == NULL)
+                {
+                    if (data_len != 1)
+                        log_message(LOG_STDOUT, "Empty message\n");
+                }
+                else
+                    // when threading, add (i, data, size) to queue instead of
+                    // doing it now, in the main loop
+                    process_data(env, i, data, data_len);
             }
         }
     }
@@ -96,12 +114,11 @@ _Noreturn void run_server(struct server_env *env)
 
 int create_and_bind(char *ip_addr, char *port)
 {
-    struct addrinfo *result;
-
     struct addrinfo hints = { 0 }; // init all fields to zero
-    hints.ai_flags = AI_PASSIVE; // All interfaces
+    // hints.ai_flags = AI_PASSIVE; // All interfaces
     hints.ai_family = AF_INET; // IPv4 choices
-    hints.ai_protocol = 0; // Any protocol, but may want to restrict to http ?
+    // hints.ai_protocol = 0; // Any protocol, but may want to restrict to http
+    // ?
     hints.ai_socktype = SOCK_STREAM; // TCP socket
 
     // IP addr
@@ -117,10 +134,13 @@ int create_and_bind(char *ip_addr, char *port)
     hints.ai_addrlen = sizeof(addr_in);
 
     int gai_err_code;
+    struct addrinfo *result;
     if ((gai_err_code = getaddrinfo(NULL, port, &hints, &result)) != 0)
     {
-        // looging with gai_strerror(gai_err_code)
-        log_error("Could not get address info from port '%s'\n", port);
+        log_error(
+            "Could not get address info from port '%s' with error: ''%s'\n",
+            port, gai_strerror(gai_err_code));
+        freeaddrinfo(result);
         return -1;
     }
 
@@ -134,6 +154,10 @@ int create_and_bind(char *ip_addr, char *port)
             == -1)
             continue;
 
+        // TODO: only for vhosts & check for errors here
+        int override = 1;
+        setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &override, sizeof(int));
+
         if (bind(socket_fd, addr->ai_addr, addr->ai_addrlen) == 0)
             // Successful bind
             break;
@@ -142,15 +166,17 @@ int create_and_bind(char *ip_addr, char *port)
         close(socket_fd);
     }
 
+    // clean up
+    freeaddrinfo(result);
+
     if (addr == NULL)
     {
         log_error("No suitable address found\n");
+        if (errno != 0)
+            warn(__func__);
         // logging (no suitable address)
         return -1;
     }
-
-    // clean up
-    freeaddrinfo(result);
 
     return socket_fd;
 }
@@ -177,22 +203,19 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
         calloc(EPOLL_MAXEVENTS, sizeof(struct epoll_event));
 
     // check allocations
-    if (env == NULL || vhosts_socket_fds || events == NULL)
+    if (env == NULL || vhosts_socket_fds == NULL || events == NULL)
     {
-        free(env);
-        free(vhosts_socket_fds);
-        free(events);
+        FREE_SET_NULL(env, vhosts_socket_fds, events);
         log_error("Out of memory (%s)\n", __func__);
         return NULL;
     }
 
     // set up the epoll instance
-    int epoll_fd = epoll_create(0);
+    int epoll_fd = epoll_create(1);
     if (epoll_fd == -1)
     {
-        free(env);
-        free(events);
-        // TODO: logging (errno ?)
+        FREE_SET_NULL(env, vhosts_socket_fds, events);
+        log_error("Could not create epoll file descriptor\n");
         return NULL;
     }
 
@@ -203,7 +226,7 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     free(local_ip_addr);
     if (server_socket_fd == -1)
     {
-        // TODO: logging (failed setting up global)
+        log_error("Could not setup the global server\n");
         FREE_SET_NULL(env, vhosts_socket_fds, events)
         return NULL;
     }
@@ -218,7 +241,7 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
 
         if (vhosts_socket_fds[i] == -1)
         {
-            // TODO: logging (failed setting up vhost)
+            log_error("Could not setup the vhost server n%zu\n", i + 1);
 
             // close all the previously opened sockets
             close(server_socket_fd);

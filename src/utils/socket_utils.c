@@ -1,14 +1,20 @@
 #include "socket_utils.h"
 
+#include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+
+#include "logging.h"
 
 #define SOCK_RD_BUFF_SIZE 256
 
-char *read_from_connection(int socket_fd, size_t *data_len)
+char *read_from_connection(int socket_fd, size_t *data_len, bool *alive)
 {
+    *alive = true;
     size_t capacity = SOCK_RD_BUFF_SIZE;
     size_t size = 0;
     char *buffer = malloc(capacity);
@@ -22,9 +28,16 @@ char *read_from_connection(int socket_fd, size_t *data_len)
         if (remaining_capacity < SOCK_RD_BUFF_SIZE)
             buffer = realloc(buffer, (capacity += SOCK_RD_BUFF_SIZE));
     }
-    if (num_read == -1)
+    if (num_read == 0)
     {
-        // TODO: logging (error while reading)
+        *alive = false;
+        *data_len = 0;
+        return NULL;
+    }
+    if (num_read == -1 && errno != EAGAIN)
+    {
+        log_error("Error occurred in data reading\n");
+        warn(__func__);
         *data_len = 1;
         return NULL;
     }
@@ -61,5 +74,8 @@ bool set_socket_nonblocking_mode(int socket_fd)
 char *get_local_ip_addr(void)
 {
     // TODO :^)
-    return "192.168.219.175";
+    char ip[] = "192.168.219.175";
+    char *heap = malloc(sizeof(ip));
+    strcpy(heap, ip);
+    return heap;
 }

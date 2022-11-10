@@ -4,7 +4,9 @@
 #include <stdbool.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
+#include "utils/logging.h"
 #include "utils/socket_utils.h"
 
 void register_connection(struct server_env *env)
@@ -66,8 +68,19 @@ void register_connection(struct server_env *env)
 void process_data(struct server_env *env, int event_index, char *data,
                   size_t size)
 {
-    (void)env;
-    (void)event_index;
-    (void)data;
-    (void)size;
+    printf("Got: '''\n");
+    for (size_t i = 0; i < size; ++i)
+        printf("%c", data[i]);
+    printf("\n'''\n");
+
+    const char reply[] = "HTTP/1.0 200 OK\r\n"
+                         "Content-type: text/html\r\n"
+                         "Connection: close\r\n"
+                         "Content-Length: 21\r\n"
+                         "\r\n"
+                         "this is the body !!!\n";
+
+    int client_socket_fd = env->events[event_index].data.fd;
+    size_t reply_size = sizeof(reply) - 1;
+    write(client_socket_fd, reply, reply_size);
 }

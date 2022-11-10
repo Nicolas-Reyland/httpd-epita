@@ -71,12 +71,3 @@ bool set_socket_nonblocking_mode(int socket_fd)
 
     return true;
 }
-
-char *get_local_ip_addr(void)
-{
-    // TODO :^)
-    char ip[] = "192.168.219.175";
-    char *heap = malloc(sizeof(ip));
-    strcpy(heap, ip);
-    return heap;
-}

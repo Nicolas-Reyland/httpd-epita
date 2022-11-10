@@ -91,9 +91,6 @@ void process_data(struct server_env *env, int event_index, char *data,
 
 bool incoming_connection(struct server_env *env, int client_socket_fd)
 {
-    if (client_socket_fd == env->server_socket_fd)
-        return true;
-
     for (size_t i = 0; i < env->config->num_vhosts; ++i)
         if (client_socket_fd == env->vhosts_socket_fds[i])
             return true;

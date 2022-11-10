@@ -10,7 +10,6 @@
 struct server_env
 {
     struct server_config *config;
-    int server_socket_fd;
     int *vhosts_socket_fds;
     int epoll_fd;
     struct epoll_event *events;

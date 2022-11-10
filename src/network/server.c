@@ -137,18 +137,6 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
         return NULL;
     }
 
-    // set up main server
-    char *local_ip_addr = get_local_ip_addr();
-    int server_socket_fd =
-        setup_socket(epoll_fd, local_ip_addr, HTTP_PORT, false);
-    free(local_ip_addr);
-    if (server_socket_fd == -1)
-    {
-        log_error("Could not setup the global server\n");
-        FREE_SET_NULL(env, vhosts_socket_fds, events)
-        return NULL;
-    }
-
     // set up vhosts
     for (size_t i = 0; i < config->num_vhosts; ++i)
     {
@@ -164,7 +152,6 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
             log_error("Could not setup the vhost server n%zu\n", i + 1);
 
             // close all the previously opened sockets
-            close(server_socket_fd);
             for (size_t j = 0; j < i; ++j)
                 close(vhosts_socket_fds[j]);
 
@@ -174,7 +161,6 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     }
 
     env->config = config;
-    env->server_socket_fd = server_socket_fd;
     env->vhosts_socket_fds = vhosts_socket_fds;
     env->epoll_fd = epoll_fd;
     env->events = events;

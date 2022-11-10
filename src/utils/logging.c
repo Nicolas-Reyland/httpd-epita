@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-enum log_level LOG_LEVEL = LOG_DEBUG;
+#include "state.h"
 
 static void vlog_message(int flags, const char *format, va_list args);
 
@@ -40,7 +40,7 @@ void log_error_and_exit(const char *format, ...)
 void vlog_message(int flags, const char *format, va_list args)
 {
     enum log_level msg_level = flags & LOG_LEVEL_MASK;
-    if (msg_level < LOG_LEVEL)
+    if (msg_level < g_state.log_level)
         return;
 
     if (flags & LOG_STDOUT)

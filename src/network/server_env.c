@@ -1,7 +1,6 @@
 #include "server_env.h"
 
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "network/vhost.h"
 #include "utils/mem.h"

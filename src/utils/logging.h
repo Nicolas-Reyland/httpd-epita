@@ -9,10 +9,6 @@
 
 #define LOG_LEVEL_MASK 07
 
-enum log_level;
-
-extern enum log_level LOG_LEVEL;
-
 enum log_level
 {
     LOG_DEBUG = 0,

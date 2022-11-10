@@ -4,6 +4,7 @@
 #include "network/server.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/parsers/config/config_parser.h"
+#include "utils/state.h"
 
 #ifndef CUSTOM_MAIN
 int main(int argc, char **argv)

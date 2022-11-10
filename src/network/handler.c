@@ -128,25 +128,15 @@ void process_data(struct server_env *env, int event_index, char *data,
     ssize_t index;
     struct vhost *vhost =
         vhost_from_client_socket(env, client_socket_fd, &index);
-    char *root_dir = hash_map_get(vhost->map, "root_dir");
 
     // CODE DE CE MEC, LA
-    int err = 200;
-    struct request *req = parser_request(data, size, &err);
-    if (err != 200)
-    {
-        log_error("grosse erreur parsing\n");
-        return;
-    }
-    struct response *resp = create_response(&err, root_dir, req->target);
+    struct response *resp = parsing_http(data, size, vhost);
     write(client_socket_fd, resp->res, resp->res_len);
 
     printf("Got: '''\n");
     for (size_t i = 0; i < resp->res_len; ++i)
         printf("%c", resp->res[i]);
     printf("\n'''\n");
-
-    free_request(req);
     free_response(resp);
     return;
 

@@ -342,7 +342,7 @@ struct request *sub_parser_request(char *raw_request, size_t size)
  *   Function: verify if there is the options host in req->options
  *              in case of error, set the *err and return the error number
  */
-static int not_contain_host(struct pair_list *options, int *err)
+static int not_contain_host(struct pair_list *options, size_t *err)
 {
     while (options)
     {
@@ -361,7 +361,7 @@ static int not_contain_host(struct pair_list *options, int *err)
  *   Function: verify if the protocol is valid in req->version
  *              in case of error, set the *err and return the error number
  */
-static int is_not_protocol_valid(char *version, int *err)
+static int is_not_protocol_valid(char *version, size_t *err)
 {
     if (strcmp(version, "HTTP/1.1") == 0)
     {
@@ -376,7 +376,7 @@ static int is_not_protocol_valid(char *version, int *err)
  *   Function: verify if the method is valid in req->method
  *              in case of error, set the *err and return the error number
  */
-static int is_not_method_allowed(char *method, int *err)
+static int is_not_method_allowed(char *method, size_t *err)
 {
     if (strcmp(method, "GET") == 0 || strcmp(method, "HEAD") == 0)
     {
@@ -393,7 +393,7 @@ static int is_not_method_allowed(char *method, int *err)
  *             return a struct request fullfilled, in case of error
  *              sets the *err pointer to the number of the error
  */
-struct request *parser_request(char *raw_request, size_t size, int *err)
+struct request *parser_request(char *raw_request, size_t size, size_t *err)
 {
     struct request *req = sub_parser_request(raw_request, size);
     if (!req)
@@ -420,7 +420,7 @@ int main(void)
                         "con\0nexion: close\r\n"
                         "insh: c\0amarche\r\n"
                         "key:\0v\0\r\n"
-                        "Host:\0v\0\r\n"
+                        "Host: 123:456\0\r\n"
                         "\r\n"
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;

@@ -199,3 +199,20 @@ Test(ParseRequest, option_invalid)
     free_request(req);
     cr_assert(err == 400);
 }
+
+Test(ParseRequest, host_multiple_colon)
+{
+    char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
+                        "H\0\0\0TTP/1.1\r\n"
+                        "con\0nexion: close\r\n"
+                        "insh: c\0amarche\r\n"
+                        "key:\0v\0\r\n"
+                        "Host:\0 123:1254\0\r\n"
+                        "\r\n"
+                        "this \0is t\0\0he body";
+    size_t size = sizeof(req_string) - 1;
+    int err = 200;
+    struct request *req = parser_request(req_string, size, &err);
+    free_request(req);
+    cr_assert(err == 200);
+}

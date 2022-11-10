@@ -13,7 +13,7 @@ struct response
     size_t res_len;
 };
 
-struct response *create_response(int *err, char *vhost, char *target);
+struct response *parsing_http(char *request_raw, size_t size, struct vhost *vhost);
 void free_response(struct response *resp);
 
 #endif /* !RESPONSE_H */

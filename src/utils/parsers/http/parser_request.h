@@ -15,7 +15,7 @@ struct request
     struct hash_map *hash_map;
 };
 
-struct request *parser_request(char *raw_request, size_t size, int *err);
+struct request *parser_request(char *raw_request, size_t size, size_t *err);
 void free_request(struct request *req);
 
 #endif /* !PARSER_REQUEST_H */

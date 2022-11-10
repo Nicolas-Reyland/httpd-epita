@@ -8,7 +8,7 @@
 #include "utils/parsers/error_parsing/error_parsing.h"
 #include "utils/string_utils.h"
 
-static size_t end_token(char *request, size_t index);
+static size_t end_token(char *request, size_t index, char *delim);
 
 static size_t next_token(char *request, size_t index, char *delim);
 
@@ -18,7 +18,7 @@ static struct request *init_request(void);
 
 static struct request *parse_request_header(char *request);
 
-static void tokenise_option(char *token, struct request *request);
+static void tokenise_option(char *token, struct request *request, int *err);
 
 static int is_not_cr(int c);
 
@@ -50,12 +50,18 @@ struct request *init_request(void)
  *   index = index where we ended the parsing
  *   Function: Search the index of the end of the token
  */
-size_t end_token(char *request, size_t index)
+size_t end_token(char *request, size_t index, char *delim)
 {
     size_t i = index;
-    while (request[i] != '\0' && request[i] != ' ')
-        i++;
-    return i;
+    if(!delim)
+    {
+        while (request[i] != '\0' && request[i] != ' ')
+            i++;
+        return i;
+    }
+    while (request[i] != '\0' && request[i] != ' ' && request[i] != *delim)
+            i++;
+        return i;
 }
 
 /*
@@ -129,7 +135,7 @@ static char *parse_header(char *request, size_t *begin, size_t *end)
     *begin = next_token(request, *begin, NULL);
     if (request[*begin] == '\0')
         return NULL;
-    *end = end_token(request, *begin);
+    *end = end_token(request, *begin, NULL);
     char *header = my_strcpy(request, *begin, *end);
     *begin = *end;
     return header;
@@ -171,19 +177,16 @@ static char *tokenise_key(char *token, size_t *i, size_t *end)
     if (!token)
         return NULL;
     *i = next_token(token, *i, NULL);
-    *end = end_token(token, *i);
+    char c = ':';
+    *end = end_token(token, *i, &c);
     if (token[*i] == '\0')
         return NULL;
     char *key = NULL;
-    if (token[(*end - 1)] == ':')
-    {
-        key = my_strcpy(token, *i, *end - 1);
-    }
-    else
+    if (token[(*end)] == ':')
     {
         key = my_strcpy(token, *i, *end);
     }
-    *i = *end;
+    *i = *end + 1;
     return key;
 }
 
@@ -197,9 +200,8 @@ static char *tokenise_value(char *token, size_t *i, size_t *end)
 {
     if (!token)
         return NULL;
-    char delim = ':';
-    *i = next_token(token, *i, &delim);
-    *end = end_token(token, *i);
+    *i = next_token(token, *i, NULL);
+    *end = end_token(token, *i, NULL);
     if (token[*i] == '\0')
         return NULL;
     char *key = my_strcpy(token, *i, *end);
@@ -213,7 +215,7 @@ static char *tokenise_value(char *token, size_t *i, size_t *end)
  *   Function: Tokenise a string containing "key: value" and puts
  *              it in hashmap of request
  */
-void tokenise_option(char *token, struct request *request)
+void tokenise_option(char *token, struct request *request, int *err)
 {
     if (!token)
         return;
@@ -221,10 +223,16 @@ void tokenise_option(char *token, struct request *request)
     size_t end = 0;
     char *key = tokenise_key(token, &i, &end);
     if (!key)
+    {
+        *err = 1;
         return;
+    }
     char *value = tokenise_value(token, &i, &end);
     if (!value)
+    {
+        *err = 1;
         return;
+    }
     hash_map_insert(request->hash_map, key, value, NULL);
 }
 
@@ -303,11 +311,17 @@ struct request *sub_parser_request(char *raw_request, size_t size)
     }
 
     request += 2;
+    int err = 0;
     while (token != NULL && request[0] != '\r')
     {
         FREE_SET_NULL(token);
         token = token_from_class(&request, is_not_cr, NULL);
-        tokenise_option(token, req);
+        tokenise_option(token, req, &err);
+        if (err == 1)
+        {
+            free_elements(token,initial_ptr,req);
+            return NULL;
+        }
         request += 2;
     }
     request += 2;
@@ -368,8 +382,8 @@ static int is_not_method_allowed(char *method, int *err)
     {
         return 0;
     }
-    *err = METHOD_ERR;
-    return METHOD_ERR;
+    *err = METHOD_NOT_ALLOWED;
+    return METHOD_NOT_ALLOWED;
 }
 
 /*
@@ -401,16 +415,15 @@ struct request *parser_request(char *raw_request, size_t size, int *err)
 #if defined(CUSTOM_MAIN) && defined(MAIN1)
 int main(void)
 {
-    char req_string[] = "HEAD /path/script.cgi?field1=value1&field2=value2 "
+    char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
                         "con\0nexion: close\r\n"
                         "insh: c\0amarche\r\n"
-                        "key     :\0v\0\r\n"
-                        "Host     :\0v\0\r\n"
+                        "key:\0v\0\r\n"
+                        "Host:\0v\0\r\n"
                         "\r\n"
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
-    printf("%zu\n",size);
     int err = 0;
     struct request *req = parser_request(req_string, size, &err);
     if (req && err == 0)
@@ -430,7 +443,7 @@ int main(void)
         hash_map_dump(req->hash_map, " - ");
         free_request(req);
     }
-    if (req && err != 0)
+    if (!req && err != 0)
         printf("there is an error of parsing\n");
     return 0;
 }

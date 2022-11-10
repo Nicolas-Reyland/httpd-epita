@@ -7,7 +7,7 @@ CC ?= gcc
 # mandatory (epita)
 CFLAGS = -std=c99 -Werror -Wall -Wextra -Wvla
 # not sure ?
-CFLAGS += -g -fsanitize=address
+CFLAGS += -g # -fsanitize=address
 # mandatory (self)
 CFLAGS += -Isrc -I.
 # more
@@ -17,6 +17,7 @@ CFLAGS += -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=700
 CFLAGS += $(CMD_CFLAGS)
 
 TEST_LDLIBS = -lcriterion
+# LDLIBS = -fsatnitize=address
 
 
 # -*- Setup Files Variables -*-

@@ -2,6 +2,7 @@
 
 #include "utils/logging.h"
 #include "utils/mem.h"
+#include <unistd.h>
 
 #define VHOST_VECTOR_INIT_SIZE 10
 
@@ -29,6 +30,8 @@ void free_vhost(struct vhost *vhost, bool free_config, bool free_obj)
     CLOSE_ALL(vhost->socket_fd);
     if (free_config)
         free_hash_map(vhost->map, true);
+    for (size_t i = 0; i < vhost->clients->size; ++i)
+        close(vhost->clients->data[i]);
     free_vector(vhost->clients);
     if (free_obj)
         free(vhost);

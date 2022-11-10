@@ -20,6 +20,8 @@
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
+#include "utils/state.h"
+#include "signals/signals.h"
 #include "vhost.h"
 
 // this is just a btach size for events ...
@@ -39,6 +41,11 @@ _Noreturn void start_all(int num_threads, struct server_config *config)
         exit(EXIT_FAILURE);
     }
     log_message(LOG_STDOUT | LOG_INFO, "Setup done. Starting server.\n");
+
+    // Setup all the global variables
+    setup_g_state(env);
+    // Setup the signal handlers
+    setup_signal_handlers();
 
     // Everything is up and ready ! Get it running !!!
     run_server(env);
@@ -88,6 +95,7 @@ _Noreturn void run_server(struct server_env *env)
                 // when threading, add (i, data, size) to queue instead of
                 // doing it now, in the main loop
                 process_data(env, i, data, data_len);
+                free(data);
             }
         }
     }

@@ -3,7 +3,7 @@
 
 #include "utils/parsers/http/parser_request.h"
 
-Test(parser_request_test_suit, test_nbkeys)
+Test(ParseRequest, test_nbkeys)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -21,7 +21,7 @@ Test(parser_request_test_suit, test_nbkeys)
     cr_assert(nb_keys == 4);
 }
 
-Test(parser_request_test_suit, perferct_request)
+Test(ParseRequest, perferct_request)
 {
     char req_string[] = "HE\0AD /p\0ath/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -38,7 +38,7 @@ Test(parser_request_test_suit, perferct_request)
     cr_assert(err == 0);
 }
 
-Test(parser_request_test_suit, test_bodyNULL)
+Test(ParseRequest, test_bodyNULL)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -55,7 +55,7 @@ Test(parser_request_test_suit, test_bodyNULL)
     cr_assert(body == NULL);
 }
 
-Test(parser_request_test_suit, test_sizebody)
+Test(ParseRequest, test_sizebody)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -73,7 +73,7 @@ Test(parser_request_test_suit, test_sizebody)
     cr_assert(size_body == 19);
 }
 
-Test(parser_request_test_suit, test_no_CRLFCRLF)
+Test(ParseRequest, test_no_CRLFCRLF)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -88,7 +88,7 @@ Test(parser_request_test_suit, test_no_CRLFCRLF)
     cr_assert(req == NULL);
 }
 
-Test(parser_request_test_suit, test_no_CRLFCRLF_err)
+Test(ParseRequest, test_no_CRLFCRLF_err)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -103,7 +103,7 @@ Test(parser_request_test_suit, test_no_CRLFCRLF_err)
     cr_assert(err == 4);
 }
 
-Test(parser_request_test_suit, test_no_host)
+Test(ParseRequest, test_no_host)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -118,7 +118,7 @@ Test(parser_request_test_suit, test_no_host)
     cr_assert(err == 2);
 }
 
-Test(parser_request_test_suit, test_protocol_false)
+Test(ParseRequest, test_protocol_false)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1111111\r\n"
@@ -134,7 +134,7 @@ Test(parser_request_test_suit, test_protocol_false)
     cr_assert(err == 3);
 }
 
-Test(parser_request_test_suit, test_protocol_method_false)
+Test(ParseRequest, test_protocol_method_false)
 {
     char req_string[] = "PUT /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -150,7 +150,7 @@ Test(parser_request_test_suit, test_protocol_method_false)
     cr_assert(err == 1);
 }
 
-Test(parser_request_test_suit, test_not_enough_header)
+Test(ParseRequest, test_not_enough_header)
 {
     char req_string[] = "/path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -162,6 +162,17 @@ Test(parser_request_test_suit, test_not_enough_header)
     size_t size = sizeof(req_string) - 1;
     int err = 0;
     struct request *req = parser_request(req_string, size, &err);
+    free_request(req);
+    cr_assert(err == 4);
+}
+
+Test(ParseRequest, test_invalid)
+{
+    char req_string[] = "\r\n";
+    size_t size = sizeof(req_string) - 1;
+    int err = 0;
+    struct request *req = parser_request(req_string, size, &err);
+    cr_assert_null(req, "Expected TO BE NULL");
     free_request(req);
     cr_assert(err == 4);
 }

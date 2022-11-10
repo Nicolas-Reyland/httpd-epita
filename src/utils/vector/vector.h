@@ -23,7 +23,7 @@ struct vector *vector_init(size_t n);
 ** Release the memory used by the vector.
 ** Does nothing if `v` is `NULL`.
 */
-void vector_destroy(struct vector *v);
+void free_vector(struct vector *v);
 
 /*
 ** Resize the vector to `n` capacity.
@@ -48,12 +48,6 @@ void vector_print(const struct vector *v);
 ** Returns `NULL` if an error occured.
 */
 struct vector *vector_reset(struct vector *v, size_t n);
-
-/*
-** Insert `n` at the index `i`. Expand the vector if needed.
-** Returns `NULL` if an error occured.
-*/
-struct vector *vector_insert(struct vector *v, size_t i, int elt);
 
 /*
 ** Remove the element at the index `i`.

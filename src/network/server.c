@@ -20,6 +20,7 @@
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
+#include "vhost.h"
 
 // this is just a btach size for events ...
 // not the max number of sockets in the epoll
@@ -115,16 +116,14 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
         return NULL;
 
     struct server_env *env = malloc(sizeof(struct server_env));
-    int *vhosts_socket_fds = calloc(config->num_vhosts, sizeof(int));
-    int *vhost_client_socket_fds = calloc(config->num_vhosts, sizeof(int));
+    struct vhost *vhosts = init_vhosts(config);
     struct epoll_event *events =
         calloc(EPOLL_MAXEVENTS, sizeof(struct epoll_event));
 
     // check allocations
-    if (env == NULL || vhosts_socket_fds == NULL
-        || vhost_client_socket_fds == NULL || events == NULL)
+    if (env == NULL || vhosts == NULL || events == NULL)
     {
-        FREE_SET_NULL(env, vhosts_socket_fds, vhost_client_socket_fds, events);
+        FREE_SET_NULL(env, vhosts, events);
         log_error("Out of memory (%s)\n", __func__);
         return NULL;
     }
@@ -133,7 +132,7 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     int epoll_fd = epoll_create(1);
     if (epoll_fd == -1)
     {
-        FREE_SET_NULL(env, vhosts_socket_fds, events);
+        FREE_SET_NULL(env, events);
         log_error("Could not create epoll file descriptor\n");
         return NULL;
     }
@@ -145,25 +144,24 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
         char *vhost_port = hash_map_get(config->vhosts[i], "port");
         log_message(LOG_STDOUT | LOG_DEBUG, "Adding vhost @ %s:%s\n",
                     vhost_ip_addr, vhost_port);
-        vhosts_socket_fds[i] =
+        vhosts[i].socket_fd =
             setup_socket(epoll_fd, vhost_ip_addr, vhost_port, true);
 
-        if (vhosts_socket_fds[i] == -1)
+        if (vhosts[i].socket_fd == -1)
         {
             log_error("Could not setup the vhost server n%zu\n", i + 1);
 
             // close all the previously opened sockets
             for (size_t j = 0; j < i; ++j)
-                close(vhosts_socket_fds[j]);
+                free_vhost(vhosts + j, false, false);
 
-            FREE_SET_NULL(env, vhosts_socket_fds, events)
+            FREE_SET_NULL(env, events)
             return NULL;
         }
     }
 
     env->config = config;
-    env->vhosts_socket_fds = vhosts_socket_fds;
-    env->vhosts_client_socket_fds = vhost_client_socket_fds;
+    env->vhosts = vhosts;
     env->epoll_fd = epoll_fd;
     env->events = events;
     env->num_threads = num_threads;

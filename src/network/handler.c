@@ -3,28 +3,30 @@
 #include <errno.h>
 #include <netdb.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "network/vhost.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
+#include "utils/vector/vector.h"
+
+static struct vhost *vhost_from_host_socket(struct server_env *env,
+                                            int socket_fd);
 
 void register_connection(struct server_env *env, int host_socket_fd)
 {
-    // Get index of vhost associated to the socket fd
-    size_t vhost_index;
-    for (vhost_index = 0; vhost_index < env->config->num_vhosts; ++vhost_index)
-        if (env->vhosts_socket_fds[vhost_index] == host_socket_fd)
-            break;
-    if (vhost_index == env->config->num_vhosts)
+    // get vhost associated to the socket fd
+    struct vhost *vhost = vhost_from_host_socket(env, host_socket_fd);
+    if (vhost == NULL)
     {
         log_error("Could not find host from socket_fd %d\n", host_socket_fd);
         return;
     }
-    struct hash_map *vhost_map = env->config->vhosts[vhost_index];
 
     // There might be multiple new clients
     while (true)
@@ -40,7 +42,7 @@ void register_connection(struct server_env *env, int host_socket_fd)
             else
             {
                 log_error("Could not accept connection for host %s\n",
-                          hash_map_get(vhost_map, "server_name"));
+                          hash_map_get(vhost->map, "server_name"));
                 break;
             }
         }
@@ -77,9 +79,17 @@ void register_connection(struct server_env *env, int host_socket_fd)
         }
 
         // register client socket fd to vhost
-        int *fds = env->vhost_client_socket_fds[vhost_index];
-        fds = realloc(fds)
+        vector_append(vhost->clients, client_socket_fd);
     }
+}
+
+struct vhost *vhost_from_host_socket(struct server_env *env, int socket_fd)
+{
+    for (size_t i = 0; i < env->config->num_vhosts; ++i)
+        if (socket_fd == env->vhosts[i].socket_fd)
+            return env->vhosts + i;
+
+    return NULL;
 }
 
 void process_data(struct server_env *env, int event_index, char *data,
@@ -90,6 +100,8 @@ void process_data(struct server_env *env, int event_index, char *data,
         log_error("%s: Got empty data\n", __func__);
         return;
     }
+
+    //
 
     printf("Got: '''\n");
     for (size_t i = 0; i < size; ++i)
@@ -104,13 +116,15 @@ void process_data(struct server_env *env, int event_index, char *data,
 
     int client_socket_fd = env->events[event_index].data.fd;
     size_t reply_size = sizeof(reply) - 1;
+
+    //
     write(client_socket_fd, reply, reply_size);
 }
 
 bool incoming_connection(struct server_env *env, int client_socket_fd)
 {
     for (size_t i = 0; i < env->config->num_vhosts; ++i)
-        if (client_socket_fd == env->vhosts[i].socket_fd[i])
+        if (client_socket_fd == env->vhosts[i].socket_fd)
             return true;
 
     return false;

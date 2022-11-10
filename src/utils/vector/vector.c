@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "utils/mem.h"
+
 /*
 ** Initialize the vector with `n` capacity.
 ** Returns `NULL` if an error occured.
@@ -100,27 +102,8 @@ struct vector *vector_reset(struct vector *v, size_t n)
 }
 
 /*
-** Insert `n` at the index `i`. Expand the vector if needed.
-** Returns `NULL` if an error occured.
-*/
-struct vector *vector_insert(struct vector *v, size_t i, int elt)
-{
-    if (v == NULL || i > v->size)
-        return NULL;
-
-    if (v->size == v->capacity)
-        v = vector_resize(v, 2 * v->capacity);
-
-    for (size_t j = v->size; j > i; --j)
-        v->data[j] = v->data[j - 1];
-    ++v->size;
-
-    v->data[i] = elt;
-    return v;
-}
-
-/*
 ** Remove the element at the index `i`.
+** Replace it with the last element.
 ** Returns `NULL` if an error occured.
 */
 struct vector *vector_remove(struct vector *v, size_t i)
@@ -128,9 +111,8 @@ struct vector *vector_remove(struct vector *v, size_t i)
     if (v == NULL || i >= v->size)
         return NULL;
 
+    v->data[i] = v->data[v->size - 1];
     --v->size;
-    for (size_t j = i; j < v->size; ++j)
-        v->data[j] = v->data[j + 1];
 
     if (v->size < v->capacity / 2)
         return vector_resize(v, v->capacity / 2);

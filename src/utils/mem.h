@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #define FCLOSE_SET_NULL(Ptr)                                                   \
     {                                                                          \

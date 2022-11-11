@@ -6,15 +6,28 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include "utils/logging.h"
+#include "signals/handlers.h"
 
 #define READ_BUFF_SIZE 4096
+
+int isDir(const char* fileName)
+{
+    struct stat path;
+
+    stat(fileName, &path);
+
+    return S_ISDIR(path.st_mode);
+}
 
 /*
  *   target = ressource that the client want to get
  *   vhost = vhost that the server gave to extract the root dir
  *   Function: return the full path of the ressource concat with
  *             the root dir from vhost
- */
+ */ 
 char *get_path_ressource(char *target, struct vhost *vhost)
 {
     char *root_dir = hash_map_get(vhost->map, "root_dir");
@@ -22,7 +35,27 @@ char *get_path_ressource(char *target, struct vhost *vhost)
     path = strcpy(path, root_dir);
     path = realloc(path, strlen(path) + strlen(target) + 1);
     path = strcat(path, target);
-    return path;
+
+    //check if path is a directory and if it is, add the default file to the path
+    int is_dir = isDir(path);
+    if (is_dir != 0)
+    {
+        char *default_file = hash_map_get(vhost->map, "default_file");
+        if(!default_file)
+        {
+            // TODO: MEMORY LEAKS
+            log_error("Default file doesn t exist in Vhost config\n");
+            free(path);
+            graceful_shutdown();
+        }
+        path = realloc(path, strlen(path) + strlen(default_file) + 1);
+        path = strcat(path, default_file);
+        return path;
+    }
+    else
+    {
+        return path;
+    }
 }
 
 /*

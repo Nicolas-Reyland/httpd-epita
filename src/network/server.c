@@ -15,26 +15,33 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "handler.h"
-#include "signals/handlers.h"
-#include "signals/signals.h"
+#include "network/socket_handler.h"
+#include "network/vhost.h"
+#include "process/sig_handlers.h"
+#include "process/signals.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
-#include "vhost.h"
 
 // this is just a btach size for events ...
 // not the max number of sockets in the epoll
 #define EPOLL_MAXEVENTS 64
 
-static struct server_env *setup_server(int num_threads,
-                                       struct server_config *config);
+static int write_process_pid(char *pid_file);
 
-_Noreturn void start_all(int num_threads, struct server_config *config)
+static struct server_env *setup_server(struct server_config *config);
+
+_Noreturn void start_all(struct server_config *config, char *pid_file)
 {
-    struct server_env *env = setup_server(num_threads, config);
+    if (write_process_pid(pid_file) == -1)
+    {
+        log_error("Could not write process pid to file at '%s'\n", pid_file);
+        exit(EXIT_FAILURE);
+    }
+
+    struct server_env *env = setup_server(config);
     if (env == NULL)
     {
         log_error("Could not setup the server. Exiting.\n");
@@ -52,6 +59,43 @@ _Noreturn void start_all(int num_threads, struct server_config *config)
 
     // Everything is up and ready ! Get it running !!!
     run_server(env);
+}
+
+/*
+ * Returns -1 on failure, 0 on succes and -2 if pid_file is NULL
+ */
+int write_process_pid(char *pid_file)
+{
+    if (pid_file == NULL)
+        return -2;
+
+    FILE *file = fopen(pid_file, "w");
+    if (file == NULL)
+        return -1;
+
+    pid_t pid = getpid();
+    char pid_s[8]; // Max pid value is around 4 million for 64-bits platorms, so
+                   // 8 chars suffice !
+    sprintf(pid_s, "%d", pid);
+    size_t pid_s_len = strlen(pid_s);
+
+    size_t total_num_written = 0;
+    size_t num_written = 0;
+    while ((num_written = fwrite(pid_s + total_num_written, 1,
+                                 pid_s_len - total_num_written, file))
+               != 0
+           && total_num_written < pid_s_len)
+        total_num_written += num_written;
+
+    fclose(file);
+    if (total_num_written < pid_s_len)
+    {
+        log_error("%s: Could not write whole pid to %s : %zu out of %zu\n",
+                  __func__, pid_file, total_num_written, pid_s_len);
+        return -1;
+    }
+
+    return 0;
 }
 
 _Noreturn void run_server(struct server_env *env)
@@ -121,7 +165,7 @@ static int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost);
  *
  *  Return NULL on failure.
  */
-struct server_env *setup_server(int num_threads, struct server_config *config)
+struct server_env *setup_server(struct server_config *config)
 {
     if (config == NULL)
         return NULL;
@@ -175,7 +219,6 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     env->vhosts = vhosts;
     env->epoll_fd = epoll_fd;
     env->events = events;
-    env->num_threads = num_threads;
 
     return env;
 }

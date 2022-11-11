@@ -2,12 +2,9 @@
 
 #include <signal.h>
 #include <stddef.h>
-#include <string.h>
 
-#include "handlers.h"
+#include "sig_handlers.h"
 #include "utils/logging.h"
-
-static void signal_handler(int signum);
 
 int setup_signal_handlers(void)
 {
@@ -27,20 +24,4 @@ int setup_signal_handlers(void)
     }
 
     return 0;
-}
-
-void signal_handler(int signum)
-{
-    switch (signum)
-    {
-    case SIGINT:
-    case SIGTERM:
-        graceful_shutdown();
-        break;
-    case SIGPIPE:
-
-    default:
-        log_error("Unknown signal %s\n", strsignal(signum));
-        break;
-    }
 }

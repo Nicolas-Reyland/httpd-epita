@@ -196,7 +196,6 @@ struct server_config *fill_server_config(struct server_config *config)
             hash_map_remove(vhost_map, "root_dir");
             continue;
         }
-        printf("%zu\n%s\n",strlen(resolved_path),resolved_path);
         resolved_path = realloc(resolved_path, strlen(resolved_path)+1);
         hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
     }

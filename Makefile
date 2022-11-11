@@ -7,7 +7,7 @@ CC ?= gcc
 # mandatory (epita)
 CFLAGS = -std=c99 -Werror -Wall -Wextra -Wvla
 # not sure ?
-CFLAGS += -g # -fsanitize=address
+CFLAGS += -g -fsanitize=address
 # mandatory (self)
 CFLAGS += -Isrc -I.
 # more
@@ -17,7 +17,7 @@ CFLAGS += -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=700
 CFLAGS += $(CMD_CFLAGS)
 
 TEST_LDLIBS = -lcriterion
-# LDLIBS = -fsatnitize=address
+LDLIBS = -fsanitize=address
 
 
 # -*- Setup Files Variables -*-
@@ -40,10 +40,10 @@ check: $(TEST_EXE)
 	./$(TEST_EXE) $(CMD_TEST_ARGS)
 
 $(EXE): $(OBJS) $(MAIN_C)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 $(TEST_EXE): $(OBJS) $(TEST_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(TEST_LDLIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS) $(TEST_LDLIBS)
 
 clean:
 	$(RM) $(EXE) $(OBJS)

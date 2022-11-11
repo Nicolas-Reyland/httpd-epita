@@ -1,25 +1,19 @@
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdnoreturn.h>
-#include <string.h>
+#ifndef CUSTOM_MAIN
 
-#include "network/server.h"
-#include "utils/hash_map/hash_map.h"
-#include "utils/logging.h"
-#include "utils/parsers/config/config_parser.h"
-#include "utils/state.h"
+#    include <stdbool.h>
+#    include <stdio.h>
+#    include <string.h>
 
-#define CMD_FLAG_DRY_RUN 0001
-#define CMD_FLAG_DAEMON 00002
-#define CMD_FLAG_START 000004
-#define CMD_FLAG_STOP 0000010
-#define CMD_FLAG_RELOAD 00020
-#define CMD_FLAG_RESTART 0040
-#define CMD_FLAG_INVALID 0100
+#    include "network/server.h"
+#    include "utils/arg_flags.h"
+#    include "utils/daemons.h"
+#    include "utils/hash_map/hash_map.h"
+#    include "utils/logging.h"
+#    include "utils/parsers/config/config_parser.h"
+#    include "utils/state.h"
 
 static char *read_cmd_args(int argc, char **argv, int *error);
 
-#ifndef CUSTOM_MAIN
 int main(int argc, char **argv)
 {
     int flags;
@@ -44,11 +38,11 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    start_all(1, config);
-}
-#endif /* !CUSTOM_MAIN */
+    if (flags & CMD_FLAG_DAEMON)
+        handle_daemon(config, flags);
 
-static int daemon_flag_from_string(char *arg);
+    start_all(config);
+}
 
 char *read_cmd_args(int argc, char **argv, int *flags)
 {
@@ -78,19 +72,4 @@ char *read_cmd_args(int argc, char **argv, int *flags)
     return NULL;
 }
 
-int daemon_flag_from_string(char *arg)
-{
-    if (arg == NULL)
-        return CMD_FLAG_INVALID;
-
-    if (strcmp(arg, "start") == 0)
-        return CMD_FLAG_START;
-    if (strcmp(arg, "stop") == 0)
-        return CMD_FLAG_STOP;
-    if (strcmp(arg, "reload") == 0)
-        return CMD_FLAG_RELOAD;
-    if (strcmp(arg, "restart") == 0)
-        return CMD_FLAG_RESTART;
-
-    return CMD_FLAG_INVALID;
-}
+#endif /* !CUSTOM_MAIN */

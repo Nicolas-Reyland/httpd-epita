@@ -29,12 +29,11 @@
 // not the max number of sockets in the epoll
 #define EPOLL_MAXEVENTS 64
 
-static struct server_env *setup_server(int num_threads,
-                                       struct server_config *config);
+static struct server_env *setup_server(struct server_config *config);
 
-_Noreturn void start_all(int num_threads, struct server_config *config)
+_Noreturn void start_all(struct server_config *config)
 {
-    struct server_env *env = setup_server(num_threads, config);
+    struct server_env *env = setup_server(config);
     if (env == NULL)
     {
         log_error("Could not setup the server. Exiting.\n");
@@ -121,7 +120,7 @@ static int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost);
  *
  *  Return NULL on failure.
  */
-struct server_env *setup_server(int num_threads, struct server_config *config)
+struct server_env *setup_server(struct server_config *config)
 {
     if (config == NULL)
         return NULL;
@@ -175,7 +174,6 @@ struct server_env *setup_server(int num_threads, struct server_config *config)
     env->vhosts = vhosts;
     env->epoll_fd = epoll_fd;
     env->events = events;
-    env->num_threads = num_threads;
 
     return env;
 }

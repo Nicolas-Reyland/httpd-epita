@@ -6,7 +6,7 @@
 #include "server_env.h"
 #include "utils/parsers/config/config_parser.h"
 
-_Noreturn void start_all(int num_threads, struct server_config *config);
+_Noreturn void start_all(struct server_config *config);
 
 _Noreturn void run_server(struct server_env *env);
 

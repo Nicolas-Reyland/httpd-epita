@@ -31,8 +31,8 @@ struct state
     pthread_t *thread_ids;
 };
 
-void setup_g_state(struct server_env *env);
+int setup_g_state(struct server_env *env);
 
-int set_g_state_logging(struct server_config *config);
+void set_g_state_logging(struct server_config *config);
 
 #endif /* !STATE_H */

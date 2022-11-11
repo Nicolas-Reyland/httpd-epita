@@ -1,4 +1,3 @@
-#include "utils/reponse/reponse.h"
 #include "utils/reponse/set_header_response/set_header_response.h"
 
 #include <stdio.h>
@@ -6,8 +5,11 @@
 #include <string.h>
 #include <time.h>
 
+#include "utils/reponse/reponse.h"
+
 //--------------------------------------------------------------------------------
-//------------------------------Set header functions------------------------------
+//------------------------------Set header
+// functions------------------------------
 //--------------------------------------------------------------------------------
 /*
  *   err = code error set by the function request
@@ -70,7 +72,7 @@ void set_header_server_name(struct response *resp, struct vhost *vhost)
 }
 
 struct response *set_error_response(char *path, char *ressource,
-                                           struct response *resp, size_t *err)
+                                    struct response *resp, size_t *err)
 {
     free(path);
     free(ressource);
@@ -102,5 +104,6 @@ void set_date_gmt_header(struct response *resp)
 }
 
 //--------------------------------------------------------------------------------
-//------------------------------END set header functions--------------------------
+//------------------------------END set header
+// functions--------------------------
 //--------------------------------------------------------------------------------

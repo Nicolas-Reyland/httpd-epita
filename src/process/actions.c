@@ -27,7 +27,9 @@ _Noreturn void daemon_action_stop(char *pid_file, int process_flags)
 {
     if (process_flags & DAEMONS_NO_PIDFILE)
     {
-        log_message(LOG_STDOUT, "Pid file %s does not exist, or is not readable\n", pid_file);
+        log_message(LOG_STDOUT,
+                    "Pid file %s does not exist, or is not readable\n",
+                    pid_file);
         exit(EXIT_SUCCESS);
     }
 
@@ -37,11 +39,11 @@ _Noreturn void daemon_action_stop(char *pid_file, int process_flags)
     {
         kill(pid, SIGTERM);
     }
-        if (unlink(pid_file) == -1)
-        {
-            log_error("%s: %s: %s", __func__, pid_file, strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+    if (unlink(pid_file) == -1)
+    {
+        log_error("%s: %s: %s", __func__, pid_file, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
     exit(EXIT_SUCCESS);
 }

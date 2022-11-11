@@ -39,12 +39,6 @@ struct vector *vector_resize(struct vector *v, size_t n);
 struct vector *vector_append(struct vector *v, int elt);
 
 /*
-** Display the vector contents on `stdout`.
-** Displays `\n` if `v` is `NULL`.
-*/
-void vector_print(const struct vector *v);
-
-/*
 ** Remove all the elements of the vector, and resize it to `n` capacity.
 ** Returns `NULL` if an error occured.
 */

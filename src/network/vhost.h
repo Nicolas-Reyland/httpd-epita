@@ -7,12 +7,14 @@
 #include "utils/hash_map/hash_map.h"
 #include "utils/parsers/config/config_parser.h"
 #include "utils/vector/vector.h"
+#include "utils/vector_str/vector_str.h"
 
 struct vhost
 {
     int socket_fd;
     struct vector *clients;
     struct hash_map *map;
+    struct vector_str *client_ips;
 };
 
 struct vhost *init_vhosts(struct server_config *config);

@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "handler.h"
+#include "signals/handlers.h"
 #include "signals/signals.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"

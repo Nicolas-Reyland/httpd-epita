@@ -8,7 +8,7 @@
 #include "utils/state.h"
 _Noreturn void graceful_shutdown(void)
 {
-    log_message(LOG_STDOUT | LOG_DEBUG, "Gracefully killing self...\n");
+    log_message(LOG_STDOUT | LOG_DEBUG, "\nGracefully killing self...\n");
 
     free_server_env(g_state.env, true, true);
     exit(EXIT_SUCCESS);

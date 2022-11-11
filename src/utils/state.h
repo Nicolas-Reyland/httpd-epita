@@ -13,7 +13,7 @@
 
 #ifndef NUM_THREADS
 #    define NUM_THREADS 3
-#endif
+#endif /* !NUM_THREADS */
 
 struct state;
 

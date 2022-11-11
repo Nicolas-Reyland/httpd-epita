@@ -4,7 +4,11 @@
 
 #include "utils/hash_map/hash_map.h"
 
-struct state g_state = { 0 };
+struct state g_state = {
+    .env = NULL,
+    .log_level = LOG_LEVEL,
+    .num_threads = NUM_THREADS,
+};
 
 void setup_g_state(struct server_env *env)
 {
@@ -16,7 +20,7 @@ void setup_g_state(struct server_env *env)
     {
         char *log_file_path = hash_map_get(env->config->global, "log_file");
         g_state.log_file =
-            log_file_path == NULL ? stdout : fopen(log_file_path, "a");
+            log_file_path == NULL ? stdout : fopen(log_file_path, "w");
     }
     else
         g_state.log_file = NULL;
@@ -24,6 +28,7 @@ void setup_g_state(struct server_env *env)
 
 void set_g_state_logging(struct server_config *config)
 {
+    g_state.log_level = LOG_LEVEL;
     char *log_value = hash_map_get(config->global, "log");
     g_state.logging = log_value == NULL ? true : strcmp(log_value, "true") == 0;
 }

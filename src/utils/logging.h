@@ -3,19 +3,19 @@
 
 #include <stdarg.h>
 
-#define LOG_STDOUT 000010
-#define LOG_STDERR 000100
-#define LOG_EXIT 001000
+#define LOG_STDOUT 00100
+#define LOG_STDERR 01000
+#define LOG_EXIT 0010000
 
 #define LOG_LEVEL_MASK 07
 
 enum log_level
 {
     LOG_DEBUG = 0,
-    LOG_INFO,
-    LOG_WARN,
-    LOG_ERROR,
-    LOG_EPITA,
+    LOG_INFO = 01,
+    LOG_WARN = 02,
+    LOG_ERROR = 04,
+    LOG_EPITA = 010,
 };
 
 void log_message(int flags, const char *format, ...);

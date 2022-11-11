@@ -27,10 +27,11 @@ void signal_handler(int signum)
 
 _Noreturn void graceful_shutdown(void)
 {
-    log_message(LOG_STDOUT | LOG_DEBUG, "\nGracefully killing self...\n");
+    log_message(LOG_STDOUT | LOG_INFO, "\nGracefully killing self...\n");
 
     free_server_env(g_state.env, true, true);
-    if (g_state.logging && g_state.log_file != NULL)
+    if (g_state.logging && g_state.log_file != NULL
+        && g_state.log_file != stdout)
         fclose(g_state.log_file);
 
     exit(EXIT_SUCCESS);

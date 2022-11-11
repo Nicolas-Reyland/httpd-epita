@@ -69,6 +69,7 @@ void log_server(const char *format, ...)
     va_start(args, format);
 
     vfprintf(g_state.log_file, format, args);
+    fflush(g_state.log_file);
 
     va_end(args);
 }

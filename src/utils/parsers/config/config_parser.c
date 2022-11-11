@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "utils/mem.h"
+#include "utils/logging.h"
 #include "utils/string_utils.h"
 
 #define HASH_MAP_SIZE 3
@@ -18,6 +19,7 @@ struct server_config *parse_server_config(const char *filename)
     struct server_config *config = parse_server_config_from_stream(stream);
     fclose(stream);
 
+    config->filename = filename;
     return config;
 }
 
@@ -35,6 +37,7 @@ struct server_config *parse_server_config_from_stream(FILE *stream)
     struct server_config *config = malloc(sizeof(struct server_config));
     if (config != NULL)
     {
+        config->filename = NULL;
         config->global = NULL;
         config->num_vhosts = 0;
         config->vhosts = NULL;
@@ -142,18 +145,54 @@ struct hash_map *parse_attributes(char ***lines)
     return map;
 }
 
+static void insert_if_not_present(struct hash_map *map, char *key, char *value);
+
 /*
  * Returns true if the config is valid, false otherwise.
  * Fills the config 'global' and 'vhost's with default values
  */
-bool fill_server_config(struct server_config *config,
-                        struct hash_map *default_global,
-                        struct hash_map *default_vhost)
+struct server_config *fill_server_config(struct server_config *config)
 {
-    (void)config;
-    (void)default_global;
-    (void)default_vhost;
-    return true;
+    if (config == NULL)
+        return NULL;
+
+    if (hash_map_get(config->global, "pid_file") == NULL)
+    {
+        log_message(LOG_STDERR | LOG_EPITA,
+                    "%s: missing mandatory key in global: 'pid_file'\n",
+                    config->filename);
+        free_server_config(config, true);
+        return NULL;
+    };
+    insert_if_not_present(config->global, "log", "false");
+
+    char *mandatory_keys[] = { "server_name", "port", "ip", "root_dir" };
+    for (size_t i = 0; i < config->num_vhosts; ++i)
+    {
+        struct hash_map *vhost_map = config->vhosts[i];
+        for (size_t j = 0;
+             j < sizeof(mandatory_keys) / sizeof(mandatory_keys[0]); ++j)
+        {
+            char *key = mandatory_keys[j];
+            if (hash_map_get(vhost_map, key) == NULL)
+            {
+                log_message(LOG_STDERR | LOG_EPITA,
+                            "%s: missing mandatory key in vhost[%zu]: '%s'\n",
+                            config->filename,i,  key);
+                free_server_config(config, true);
+                return NULL;
+            };
+        }
+        insert_if_not_present(vhost_map, "default_file", "index.html");
+    }
+
+    return config;
+}
+
+void insert_if_not_present(struct hash_map *map, char *key, char *value)
+{
+    if (hash_map_get(map, key) == NULL)
+        hash_map_insert(map, strdup(key), strdup(value), NULL);
 }
 
 void free_server_config(struct server_config *config, bool free_obj)

@@ -16,12 +16,13 @@
 #include <unistd.h>
 
 #include "handler.h"
+#include "signals/handlers.h"
+#include "signals/signals.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
-#include "signals/signals.h"
 #include "vhost.h"
 
 // this is just a btach size for events ...
@@ -44,8 +45,10 @@ _Noreturn void start_all(int num_threads, struct server_config *config)
 
     // Setup all the global variables
     setup_g_state(env);
+
     // Setup the signal handlers
-    setup_signal_handlers();
+    if (setup_signal_handlers() == -1)
+        graceful_shutdown();
 
     // Everything is up and ready ! Get it running !!!
     run_server(env);

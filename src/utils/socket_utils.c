@@ -1,10 +1,10 @@
 #include "socket_utils.h"
 
-#include <signal.h>
 #include <err.h>
-#include <pthread.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,7 +81,7 @@ ssize_t safe_write(int fd, void *buf, size_t len)
     sigset_t oldset, newset;
     ssize_t result;
     siginfo_t si;
-    struct timespec ts = {0};
+    struct timespec ts = { 0 };
 
     sigemptyset(&newset);
     sigaddset(&newset, SIGPIPE);
@@ -89,7 +89,7 @@ ssize_t safe_write(int fd, void *buf, size_t len)
 
     result = write(fd, buf, len);
 
-    while (sigtimedwait(&newset, &si, &ts)>=0 || errno != EAGAIN)
+    while (sigtimedwait(&newset, &si, &ts) >= 0 || errno != EAGAIN)
         continue;
     pthread_sigmask(SIG_SETMASK, &oldset, 0);
 

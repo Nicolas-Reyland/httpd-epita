@@ -131,7 +131,7 @@ char *put_ressource_resp(char *path, size_t *err, size_t *size)
     }
     char buff[READ_BUFF_SIZE];
     //--------puts /r/n one more time between headers and ressources
-    //realloc_and_concat(resp, "\r\n", false);
+    // realloc_and_concat(resp, "\r\n", false);
     //--------
     char *res = NULL;
     ssize_t nb_read = fread(buff, 1, READ_BUFF_SIZE, file);
@@ -167,6 +167,7 @@ void realloc_and_concat(struct response *resp, char *to_concat, size_t to_concat
         free(to_concat);
 }
 
+<<<<<<< HEAD
 static void set_header_content_length(size_t content_len, struct response *resp)
 {
     char *res = malloc(50);
@@ -180,35 +181,60 @@ static void connexion_close_header(struct response *resp)
     char *close = "Connection: close\r\n";
     size_t size = strlen(close);
     realloc_and_concat(resp, close, size, false);
+=======
+static char *get_header_content_length(size_t content_len)
+{
+    char *res = malloc(39);
+    sprintf(res, "Content-Length: %zu\r\n", content_len);
+    res = realloc(res, strlen(res) + 1);
+    return res;
+>>>>>>> 4ee35bdaa81aedf37e8b3bafc10bfd746f907e16
 }
 
-static struct response *set_error_response(char *path, char *ressource, struct response *resp, size_t *err)
+static struct response *set_error_response(char *path, char *ressource,
+                                           struct response *resp, size_t *err)
 {
     free(path);
     free(ressource);
     free(resp->res);
     resp->res_len = 0;
     resp->res = NULL;
+<<<<<<< HEAD
     status_code(err,resp);//set header 
     get_date_gmt(resp);// set header date
     connexion_close_header(resp); //set header connexion close
     set_header_content_length(0, resp);//set content len header 0
     realloc_and_concat(resp, "\r\n", 2, false);
+=======
+    realloc_and_concat(resp, status_code(err), true);
+    realloc_and_concat(resp, get_date_gmt(), true);
+    realloc_and_concat(resp, "Connection: close\r\n", false);
+    char *content_len = get_header_content_length(0);
+    realloc_and_concat(resp, content_len, true);
+    realloc_and_concat(resp, "\r\n", false);
+>>>>>>> 4ee35bdaa81aedf37e8b3bafc10bfd746f907e16
     return resp;
 }
 
-struct response *create_response(size_t *err, struct vhost *vhost, struct request *req)
+struct response *create_response(size_t *err, struct vhost *vhost,
+                                 struct request *req)
 {
     struct response *resp = init_response();
     if (!resp)
         return NULL;
+<<<<<<< HEAD
     status_code(err,resp);//set header 
     get_date_gmt(resp);// set header date
+=======
+    realloc_and_concat(resp, status_code(err), true); // set header
+    realloc_and_concat(resp, get_date_gmt(), true); // set header date
+>>>>>>> 4ee35bdaa81aedf37e8b3bafc10bfd746f907e16
     char *path = get_path_ressource(req->target, vhost);
     size_t size_ressource = 0;
     char *ressource = put_ressource_resp(path, err, &size_ressource);
     if (*err != 200) // in case of error, just send a response with the header
                      // and the date
+<<<<<<< HEAD
         {
             return set_error_response(path,ressource,resp,err);
         }
@@ -217,6 +243,17 @@ struct response *create_response(size_t *err, struct vhost *vhost, struct reques
     if (strcmp(req->method,"GET") == 0)
     {
         realloc_and_concat(resp, ressource, size_ressource,true);// put ressource into response
+=======
+        return set_error_response(path, ressource, resp, err);
+    char *content_len =
+        get_header_content_length(size_ressource); // take ressource size
+    realloc_and_concat(resp, content_len,
+                       true); // create content-len: len header
+    if (strcmp(req->method, "GET") == 0)
+    {
+        realloc_and_concat(resp, ressource,
+                           true); // put ressource into response
+>>>>>>> 4ee35bdaa81aedf37e8b3bafc10bfd746f907e16
         free(path);
         return resp;
     }
@@ -225,8 +262,13 @@ struct response *create_response(size_t *err, struct vhost *vhost, struct reques
     return resp;
 }
 
+<<<<<<< HEAD
 
 struct response *parsing_http(char *request_raw, size_t size, struct vhost *vhost)
+=======
+struct response *parsing_http(char *request_raw, size_t size,
+                              struct vhost *vhost)
+>>>>>>> 4ee35bdaa81aedf37e8b3bafc10bfd746f907e16
 {
     size_t err = 200;
     struct request *req = parser_request(request_raw, size, &err);
@@ -235,8 +277,14 @@ struct response *parsing_http(char *request_raw, size_t size, struct vhost *vhos
         struct response *resp = init_response();
         if(!resp)
             return NULL;
+<<<<<<< HEAD
         free_request(req);
         return set_error_response(NULL, NULL, resp, &err);
+=======
+        realloc_and_concat(resp, status_code(&err), true);
+        realloc_and_concat(resp, get_date_gmt(), true);
+        return resp;
+>>>>>>> 4ee35bdaa81aedf37e8b3bafc10bfd746f907e16
     }
     struct response *resp = create_response(&err, vhost, req);
     free_request(req);

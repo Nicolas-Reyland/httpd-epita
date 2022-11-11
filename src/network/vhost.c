@@ -1,8 +1,9 @@
 #include "vhost.h"
 
+#include <unistd.h>
+
 #include "utils/logging.h"
 #include "utils/mem.h"
-#include <unistd.h>
 
 #define VHOST_VECTOR_INIT_SIZE 10
 

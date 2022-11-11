@@ -17,4 +17,4 @@ struct server_env
 
 void free_server_env(struct server_env *env, bool close_fds, bool free_obj);
 
-#endif /* SERVER_ENV_H */
+#endif /* !SERVER_ENV_H */

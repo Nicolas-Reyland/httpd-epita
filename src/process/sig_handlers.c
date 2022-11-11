@@ -36,9 +36,9 @@ _Noreturn void graceful_shutdown(void)
     log_message(LOG_STDOUT | LOG_INFO, "\nGracefully killing self...\n");
 
     free_server_env(g_state.env, true, true);
-    if (g_state.logging && g_state.log_file != NULL
-        && g_state.log_file != stdout)
-        fclose(g_state.log_file);
+    if (g_state.logging && g_state.log_file_stream != NULL
+        && g_state.log_file_stream != stdout)
+        fclose(g_state.log_file_stream);
 
     exit(EXIT_SUCCESS);
 }

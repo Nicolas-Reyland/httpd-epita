@@ -92,14 +92,14 @@ void vlog_message(int flags, const char *format, va_list args)
 
 void log_server(const char *format, ...)
 {
-    if (!g_state.logging || g_state.log_file == NULL)
+    if (!g_state.logging || g_state.log_file_stream == NULL)
         return;
 
     va_list args;
     va_start(args, format);
 
-    vfprintf(g_state.log_file, format, args);
-    fflush(g_state.log_file);
+    vfprintf(g_state.log_file_stream, format, args);
+    fflush(g_state.log_file_stream);
 
     va_end(args);
 }

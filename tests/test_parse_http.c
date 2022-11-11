@@ -15,7 +15,7 @@ Test(ParseRequest, test_nbkeys)
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     int nb_keys = 0;
     if (req && req->hash_map)
         nb_keys = req->hash_map->num_keys;
@@ -36,7 +36,7 @@ Test(ParseRequest, perferct_request)
         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 0);
 }
@@ -52,7 +52,7 @@ Test(ParseRequest, test_bodyNULL)
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     char *body = req->body;
     free_request(req);
     cr_assert(body == NULL);
@@ -70,7 +70,7 @@ Test(ParseRequest, test_sizebody)
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     int size_body = 0;
     if (req)
         size_body = req->body_size;
@@ -88,12 +88,12 @@ Test(ParseRequest, test_no_CRLFCRLF)
                         "Host:\0v\0\r\n";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(req == NULL);
 }
 
-Test(ParseRequest, test_no_CRLFCRLF_err)
+Test(ParseRequest, test_no_CRLFCRLF_err, 0)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -103,7 +103,7 @@ Test(ParseRequest, test_no_CRLFCRLF_err)
                         "Host:\0v\0\r\n";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
 }
@@ -118,7 +118,7 @@ Test(ParseRequest, test_no_host)
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
 }
@@ -134,7 +134,7 @@ Test(ParseRequest, test_protocol_false)
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 505);
 }
@@ -150,7 +150,7 @@ Test(ParseRequest, test_protocol_method_false)
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 405);
 }
@@ -166,7 +166,7 @@ Test(ParseRequest, test_not_enough_header)
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
 }
@@ -176,7 +176,7 @@ Test(ParseRequest, test_invalid)
     char req_string[] = "\r\n";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     cr_assert_null(req, "Expected TO BE NULL");
     free_request(req);
     cr_assert(err == 400);
@@ -195,7 +195,7 @@ Test(ParseRequest, option_invalid)
         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
     size_t err = 0;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
 }
@@ -212,7 +212,7 @@ Test(ParseRequest, host_multiple_colon)
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
     size_t err = 200;
-    struct request *req = parser_request(req_string, size, &err);
+    struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 200);
 }

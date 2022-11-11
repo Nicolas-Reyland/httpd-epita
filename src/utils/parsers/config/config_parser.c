@@ -153,12 +153,15 @@ static void insert_if_not_present(struct hash_map *map, char *key, char *value);
  */
 struct server_config *fill_server_config(struct server_config *config)
 {
+    if (config == NULL)
+        return NULL;
+
     if (hash_map_get(config->global, "pid_file") == NULL)
     {
-        free_server_config(config, true);
         log_message(LOG_STDERR | LOG_EPITA,
                     "%s: missing mandatory key in global: 'pid_file'\n",
                     config->filename);
+        free_server_config(config, true);
         return NULL;
     };
     insert_if_not_present(config->global, "log", "false");
@@ -173,10 +176,10 @@ struct server_config *fill_server_config(struct server_config *config)
             char *key = mandatory_keys[j];
             if (hash_map_get(vhost_map, key) == NULL)
             {
-                free_server_config(config, true);
                 log_message(LOG_STDERR | LOG_EPITA,
                             "%s: missing mandatory key in vhost[%zu]: '%s'\n",
-                            i, config->filename, key);
+                            config->filename,i,  key);
+                free_server_config(config, true);
                 return NULL;
             };
         }
@@ -189,7 +192,7 @@ struct server_config *fill_server_config(struct server_config *config)
 void insert_if_not_present(struct hash_map *map, char *key, char *value)
 {
     if (hash_map_get(map, key) == NULL)
-        hash_map_insert(map, key, value, NULL);
+        hash_map_insert(map, strdup(key), strdup(value), NULL);
 }
 
 void free_server_config(struct server_config *config, bool free_obj)

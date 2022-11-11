@@ -8,17 +8,19 @@
 struct state g_state = {
     .env = NULL,
     .log_level = LOG_LEVEL,
-    .num_threads = NUM_THREADS,
     .logging = false,
     .log_file_stream = NULL,
+    .num_threads = NUM_THREADS,
+    .thread_ids = NULL,
 };
 
-void setup_g_state(struct server_env *env)
+int setup_g_state(struct server_env *env)
 {
+    // Server Environment
     g_state.env = env;
-    g_state.log_level = LOG_LEVEL;
-    g_state.num_threads = NUM_THREADS;
 
+    // Logging
+    g_state.log_level = LOG_LEVEL;
     if (g_state.logging)
     {
         char *log_file_path = hash_map_get(env->config->global, "log_file");
@@ -33,6 +35,17 @@ void setup_g_state(struct server_env *env)
     }
     else
         g_state.log_file_stream = NULL;
+
+    // Threads
+    g_state.num_threads = NUM_THREADS;
+    g_state.thread_ids = calloc(g_state.num_threads, sizeof(pthread_t));
+    if (g_state.num_threads != 0 && g_state.thread_ids == NULL)
+    {
+        log_error("%s: Out of memory (thread_ids)\n", __func__);
+        return -1;
+    }
+
+    return 0;
 }
 
 void set_g_state_logging(struct server_config *config)

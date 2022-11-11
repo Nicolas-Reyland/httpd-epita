@@ -42,6 +42,10 @@ _Noreturn void start_all(struct server_config *config, char *pid_file)
         exit(EXIT_FAILURE);
     }
 
+    // Setup the signal handlers
+    if (setup_signal_handlers() == -1)
+        graceful_shutdown();
+
     set_g_state_logging(config);
     struct server_env *env = setup_server(config);
     if (env == NULL)
@@ -53,10 +57,7 @@ _Noreturn void start_all(struct server_config *config, char *pid_file)
     log_message(LOG_STDOUT | LOG_INFO, "Setup done. Starting server.\n");
 
     // Setup all the global variables
-    setup_g_state(env);
-
-    // Setup the signal handlers
-    if (setup_signal_handlers() == -1)
+    if (setup_g_state(env) == -1)
         graceful_shutdown();
 
     // Everything is up and ready ! Get it running !!!

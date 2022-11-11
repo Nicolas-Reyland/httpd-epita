@@ -26,10 +26,9 @@ static int update_global(struct hash_map *new_global);
  */
 void reload_config(void)
 {
+    const char *filename = g_state.env->config->filename;
     // Parse and validate new config
-    struct server_config *cur_config = g_state.env->config;
-    struct server_config *new_config =
-        parse_server_config(cur_config->filename);
+    struct server_config *new_config = parse_server_config(filename);
     new_config = fill_server_config(new_config);
     if (new_config == NULL)
     {
@@ -145,8 +144,10 @@ int update_logging(struct hash_map *new_global)
 {
     char *new_log_file = hash_map_get(new_global, "log_file");
     char *new_log = hash_map_get(new_global, "log");
-    int new_logging = new_log == NULL && strcmp(new_log, "true") == 0;
+    int new_logging = new_log == NULL || strcmp(new_log, "true") == 0;
     char *old_log_file = hash_map_get(g_state.env->config->global, "log_file");
+
+    log_debug("Old debug: %d, New debug: %d\n", g_state.logging, new_logging);
 
     if (!g_state.logging && !new_logging)
         return 0;
@@ -154,7 +155,7 @@ int update_logging(struct hash_map *new_global)
     if (g_state.logging && new_logging)
     {
         // Both are stdout (NULL)
-        if (old_log_file == new_log_file)
+        if (old_log_file == NULL && new_log_file == NULL)
             return 0;
         // Same log file
         if (old_log_file != NULL && new_log_file != NULL
@@ -174,7 +175,9 @@ int update_logging(struct hash_map *new_global)
     /* FALLTHROUGH */
     if (!g_state.logging && new_logging)
     {
-        FILE *new_log_file_stream = fopen(new_log_file, "w");
+        log_debug("Opening \"%s\" as new log file\n", new_log_file);
+        FILE *new_log_file_stream =
+            new_log_file == NULL ? stdout : fopen(new_log_file, "w");
         if (new_log_file_stream == NULL)
         {
             log_error("%s: could not open new log file \"%s\"\n", __func__,

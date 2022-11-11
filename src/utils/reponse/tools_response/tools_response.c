@@ -10,8 +10,10 @@
 #include <sys/stat.h>
 #include "utils/logging.h"
 #include "process/sig_handlers.h"
+#include <limits.h>
 
 #define READ_BUFF_SIZE 4096
+#define _XOPEN_SOURCE_EXTENDED 1
 
 int isDir(const char* fileName)
 {
@@ -20,6 +22,21 @@ int isDir(const char* fileName)
     stat(fileName, &path);
 
     return S_ISDIR(path.st_mode);
+}
+
+int is_path_traversal_attack(char *path, struct vhost *vhost)
+{
+    char *root_dir = hash_map_get(vhost->map, "root_dir");
+    char *resolved_path = malloc(PATH_MAX);
+    resolved_path = realpath(path, resolved_path);
+
+    if (strncmp(root_dir, path, strlen(root_dir)) == 0)
+    {
+        free(resolved_path);
+        return 0;
+    }
+    free(resolved_path);
+    return 1;
 }
 
 /*
@@ -64,7 +81,7 @@ char *get_path_ressource(char *target, struct vhost *vhost)
  *   Function: concatain the response with the contain of the file given in
  * parameter and return the response
  */
-char *put_ressource_resp(char *path, size_t *err, size_t *size)
+char *put_ressource_resp(char *path, size_t *size, struct vhost *vhost, size_t *err)
 {
     // if we can open the file:
     FILE *file = fopen(path, "r");
@@ -81,6 +98,13 @@ char *put_ressource_resp(char *path, size_t *err, size_t *size)
             return NULL;
         }
     }
+
+    if (is_path_traversal_attack(path, vhost) == 1)
+    {
+        *err = 403;
+        return NULL;
+    }
+
     char buff[READ_BUFF_SIZE];
     //--------puts /r/n one more time between headers and ressources
     // realloc_and_concat(resp, "\r\n", false);

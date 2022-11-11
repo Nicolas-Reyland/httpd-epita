@@ -133,12 +133,12 @@ bool hash_map_remove(struct hash_map *hash_map, char *key)
             {
                 // remove this pair from the hashmap
                 struct pair_list *next = list->next;
-                free(list);
+                list->next = NULL;
+                free_pair_list(list);
                 if (prev == NULL)
                     hash_map->data[i] = next;
                 else
                     prev->next = next;
-
                 return true;
             }
             prev = list;

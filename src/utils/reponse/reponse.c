@@ -50,11 +50,13 @@ struct response *create_response(size_t *err, struct vhost *vhost,
     set_header_server_name(resp,vhost);//set header server_name
     char *path = get_path_ressource(req->target, vhost);
     size_t size_ressource = 0;
-    char *ressource = put_ressource_resp(path, err, &size_ressource);
+    char *ressource = put_ressource_resp(path, &size_ressource, vhost, err);
     if (*err != 200) // in case of error, just send a response with the header
                      // and the date
     {
-        return set_error_response(path, ressource, resp, err);
+        free(path);
+        free(ressource);
+        return set_error_response(vhost, resp, err);
     }
     set_header_content_length(size_ressource, resp); // set header content len
     realloc_and_concat(resp, "\r\n", 2, false);
@@ -84,7 +86,7 @@ struct response *parsing_http(char *request_raw, size_t size,
         if (!resp)
             return NULL;
         free_request(req);
-        return set_error_response(NULL, NULL, resp, &err);
+        return set_error_response(vhost, resp, &err);
     }
     struct response *resp = create_response(&err, vhost, req);
     log_response(vhost, req, &err);

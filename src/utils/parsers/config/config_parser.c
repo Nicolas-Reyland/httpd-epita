@@ -7,6 +7,7 @@
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/string_utils.h"
+#include <limits.h>
 
 #define HASH_MAP_SIZE 3
 
@@ -156,6 +157,8 @@ struct server_config *fill_server_config(struct server_config *config)
     if (config == NULL)
         return NULL;
 
+
+
     if (hash_map_get(config->global, "pid_file") == NULL)
     {
         log_message(LOG_STDERR | LOG_EPITA,
@@ -184,6 +187,18 @@ struct server_config *fill_server_config(struct server_config *config)
             };
         }
         insert_if_not_present(vhost_map, "default_file", "index.html");
+        char *root_dir = hash_map_get(vhost_map, "root_dir");
+        char *path_buffer = malloc(PATH_MAX);
+        char *resolved_path = realpath(root_dir, path_buffer);
+        if (resolved_path == NULL)
+        {
+            free(path_buffer);
+            hash_map_remove(vhost_map, "root_dir");
+            continue;
+        }
+        printf("%zu\n%s\n",strlen(resolved_path),resolved_path);
+        resolved_path = realloc(resolved_path, strlen(resolved_path)+1);
+        hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
     }
 
     return config;

@@ -1,5 +1,7 @@
 #include "reload_config.h"
 
+#include <errno.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "network/server.h"
@@ -120,10 +122,86 @@ int update_vhosts(struct server_config *new_config)
     return 0;
 }
 
+static int update_logging(struct hash_map *new_global);
+
+static int update_pid_file(struct hash_map *new_global);
+
 int update_global(struct hash_map *new_global)
 {
-    // TODO: complete me :D
+    // Update logging
+    if (update_logging(new_global) == -1)
+        return -1;
+
+    // Update pid file
+    if (update_pid_file(new_global) == -1)
+        return -1;
+
     free_hash_map(new_global, true);
+
+    return 0;
+}
+
+int update_logging(struct hash_map *new_global)
+{
+    char *new_log_file = hash_map_get(new_global, "log_file");
+    char *new_log = hash_map_get(new_global, "log");
+    int new_logging = new_log == NULL && strcmp(new_log, "true") == 0;
+    char *old_log_file = hash_map_get(g_state.env->config->global, "log_file");
+
+    if (!g_state.logging && !new_logging)
+        return 0;
+
+    if (g_state.logging && new_logging)
+    {
+        // Both are stdout (NULL)
+        if (old_log_file == new_log_file)
+            return 0;
+        // Same log file
+        if (old_log_file != NULL && new_log_file != NULL
+            && strcmp(old_log_file, new_log_file) == 0)
+            return 0;
+
+        // Close the old stream, if it isn't stdout
+        if (g_state.log_file_stream != stdout
+            && fclose(g_state.log_file_stream) == EOF)
+        {
+            log_error("%s: %s\n", __func__, strerror(errno));
+            return -1;
+        }
+        g_state.log_file_stream = NULL;
+        g_state.logging = false;
+    }
+    /* FALLTHROUGH */
+    if (!g_state.logging && new_logging)
+    {
+        FILE *new_log_file_stream = fopen(new_log_file, "w");
+        if (new_log_file_stream == NULL)
+        {
+            log_error("%s: could not open new log file \"%s\"\n", __func__,
+                      new_log_file);
+            return -1;
+        }
+        g_state.log_file_stream = new_log_file_stream;
+        g_state.logging = new_logging;
+
+        return 0;
+    }
+    // Only remaining possiblity : g_state.logging && !new_logging
+    if (g_state.log_file_stream != stdout
+        && fclose(g_state.log_file_stream) == EOF)
+    {
+        log_error("%s: %s\n", __func__, strerror(errno));
+        return -1;
+    }
+    g_state.log_file_stream = NULL;
+    g_state.logging = false;
+
+    return 0;
+}
+
+int update_pid_file(struct hash_map *new_global)
+{
+    (void)new_global;
     return 0;
 }
 

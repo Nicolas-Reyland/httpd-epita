@@ -25,7 +25,7 @@ struct state
     struct server_env *env;
     int num_threads;
     bool logging;
-    FILE *log_file;
+    FILE *log_file_stream;
 };
 
 void setup_g_state(struct server_env *env);

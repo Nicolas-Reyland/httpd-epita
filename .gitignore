@@ -3,5 +3,7 @@ httpd
 httpd-test
 a.out
 
+*.log
+
 # :(
 .vscode

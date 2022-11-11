@@ -8,6 +8,8 @@ struct state g_state = {
     .env = NULL,
     .log_level = LOG_LEVEL,
     .num_threads = NUM_THREADS,
+    .logging = false,
+    .log_file = NULL,
 };
 
 void setup_g_state(struct server_env *env)

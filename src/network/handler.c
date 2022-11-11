@@ -131,7 +131,7 @@ void process_data(struct server_env *env, int event_index, char *data,
 
     // CODE DE CE MEC, LA
     struct response *resp = parsing_http(data, size, vhost);
-    write(client_socket_fd, resp->res, resp->res_len);
+    safe_write(client_socket_fd, resp->res, resp->res_len);
 
     printf("Got: '''\n");
     for (size_t i = 0; i < resp->res_len; ++i)
@@ -141,7 +141,7 @@ void process_data(struct server_env *env, int event_index, char *data,
     return;
 
     // CODE PROPRE REPREND ICI
-    // write(client_socket_fd, reply, reply_size);
+    // safe_write(client_socket_fd, reply, reply_size);
 }
 
 bool incoming_connection(struct server_env *env, int client_socket_fd)

@@ -20,6 +20,7 @@ int setup_signal_handlers(void)
     sigaction(SIGUSR1, &action, NULL);
     sigaction(SIGUSR2, &action, NULL);
     sigaction(SIGTERM, &action, NULL);
+    sigaction(SIGPIPE, &action, NULL);
 
     return 1;
 }

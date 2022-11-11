@@ -12,8 +12,6 @@ _Noreturn void gracefull_shutdown(void)
 {
     log_message(LOG_STDOUT | LOG_DEBUG, "Gracefully killing self...\n");
 
-    struct server_env *env = g_state.env;
-    free_server_env(env, true, true);
-
+    free_server_env(g_state.env, true, true);
     exit(EXIT_SUCCESS);
 }

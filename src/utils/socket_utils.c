@@ -1,6 +1,8 @@
 #include "socket_utils.h"
 
+#include <signal.h>
 #include <err.h>
+#include <pthread.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -72,4 +74,24 @@ bool set_socket_nonblocking_mode(int socket_fd)
     }
 
     return true;
+}
+
+ssize_t safe_write(int fd, void *buf, size_t len)
+{
+    sigset_t oldset, newset;
+    ssize_t result;
+    siginfo_t si;
+    struct timespec ts = {0};
+
+    sigemptyset(&newset);
+    sigaddset(&newset, SIGPIPE);
+    pthread_sigmask(SIG_BLOCK, &newset, &oldset);
+
+    result = write(fd, buf, len);
+
+    while (sigtimedwait(&newset, &si, &ts)>=0 || errno != EAGAIN)
+        continue;
+    pthread_sigmask(SIG_SETMASK, &oldset, 0);
+
+    return result;
 }

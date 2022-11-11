@@ -32,15 +32,13 @@ void log_request(struct vhost *vhost, struct request *req, size_t *status_code,
     char *serv_name = hash_map_get(vhost->map, "server_name");
     if (req && *status_code == 200)
     {
-        log_message(LOG_STDOUT | LOG_EPITA,
-                    "%s [%s] received %s on '%s' from %s\n", buffer, serv_name,
-                    req->method, req->target, client_ip);
+        log_server("%s [%s] received %s on '%s' from %s\n", buffer, serv_name,
+                   req->method, req->target, client_ip);
     }
     else
     {
-        log_message(LOG_STDOUT | LOG_EPITA,
-                    "%s [%s] received Bad Request from %s\n", buffer, serv_name,
-                    client_ip);
+        log_server("%s [%s] received Bad Request from %s\n", buffer, serv_name,
+                   client_ip);
     }
 }
 
@@ -60,22 +58,19 @@ void log_response(struct vhost *vhost, struct request *req, size_t *status_code,
     char *serv_name = hash_map_get(vhost->map, "server_name");
     if (req && *status_code != 400 && *status_code != 405)
     {
-        log_message(LOG_STDOUT | LOG_EPITA,
-                    "%s [%s] responding with %zu to %s for %s on '%s'\n",
-                    buffer, serv_name, *status_code, client_ip, req->method,
-                    req->target);
+        log_server("%s [%s] responding with %zu to %s for %s on '%s'\n",
+                   buffer, serv_name, *status_code, client_ip, req->method,
+                   req->target);
     }
     else if (*status_code == 400)
     {
-        log_message(LOG_STDOUT | LOG_EPITA,
-                    "%s [%s] responding with %zu to %s\n", buffer, serv_name,
-                    *status_code, client_ip);
+        log_server("%s [%s] responding with %zu to %s\n", buffer, serv_name,
+                   *status_code, client_ip);
     }
     else if (*status_code == 405)
     {
-        log_message(LOG_STDOUT | LOG_EPITA,
-                    "%s [%s] responding with %zu to %s for UNKNOWN on '%s'\n",
-                    buffer, serv_name, *status_code, client_ip, req->target);
+        log_server("%s [%s] responding with %zu to %s for UNKNOWN on '%s'\n",
+                   buffer, serv_name, *status_code, client_ip, req->target);
     }
 }
 

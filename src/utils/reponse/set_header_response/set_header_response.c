@@ -71,15 +71,15 @@ void set_header_server_name(struct response *resp, struct vhost *vhost)
     }
 }
 
-struct response *set_error_response(struct vhost *vhost,
-                                           struct response *resp, size_t *err)
+struct response *set_error_response(struct vhost *vhost, struct response *resp,
+                                    size_t *err)
 {
     free(resp->res);
     resp->res_len = 0;
     resp->res = NULL;
     set_status_code_header(err, resp); // set header
     set_date_gmt_header(resp); // set header date
-    set_header_server_name(resp, vhost);//set header server name
+    set_header_server_name(resp, vhost); // set header server name
     connexion_close_header(resp); // set header connexion close
     set_header_content_length(0, resp); // set content len header 0
     realloc_and_concat(resp, "\r\n", 2, false);

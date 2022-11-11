@@ -24,4 +24,6 @@ void log_error(const char *format, ...);
 
 void log_error_and_exit(const char *format, ...);
 
+void log_server(const char *format, ...);
+
 #endif /* !LOGGING_H */

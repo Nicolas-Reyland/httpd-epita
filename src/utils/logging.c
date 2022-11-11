@@ -59,3 +59,16 @@ void vlog_message(int flags, const char *format, va_list args)
         exit(EXIT_FAILURE);
     }
 }
+
+void log_server(const char *format, ...)
+{
+    if (!g_state.logging || g_state.log_file == NULL)
+        return;
+
+    va_list args;
+    va_start(args, format);
+
+    vfprintf(g_state.log_file, format, args);
+
+    va_end(args);
+}

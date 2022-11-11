@@ -11,6 +11,7 @@ void setup_g_state(struct server_env *env)
     g_state.env = env;
     g_state.log_level = LOG_LEVEL;
     g_state.num_threads = NUM_THREADS;
+
     if (g_state.logging)
     {
         char *log_file_path = hash_map_get(env->config->global, "log_file");

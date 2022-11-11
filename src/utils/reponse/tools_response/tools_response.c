@@ -1,5 +1,6 @@
 #include "utils/reponse/tools_response/tools_response.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +10,6 @@
 #include <unistd.h>
 
 #include "process/sig_handlers.h"
-#include <limits.h>
 #include "utils/logging.h"
 #include "utils/reponse/reponse.h"
 
@@ -83,7 +83,8 @@ char *get_path_ressource(char *target, struct vhost *vhost)
  *   Function: concatain the response with the contain of the file given in
  * parameter and return the response
  */
-char *put_ressource_resp(char *path, size_t *size, struct vhost *vhost, size_t *err)
+char *put_ressource_resp(char *path, size_t *size, struct vhost *vhost,
+                         size_t *err)
 {
     // if we can open the file:
     FILE *file = fopen(path, "r");

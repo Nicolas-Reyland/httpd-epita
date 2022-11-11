@@ -1,13 +1,13 @@
 #include "config_parser.h"
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/string_utils.h"
-#include <limits.h>
 
 #define HASH_MAP_SIZE 3
 
@@ -156,8 +156,6 @@ struct server_config *fill_server_config(struct server_config *config)
 {
     if (config == NULL)
         return NULL;
-
-
 
     if (hash_map_get(config->global, "pid_file") == NULL)
     {

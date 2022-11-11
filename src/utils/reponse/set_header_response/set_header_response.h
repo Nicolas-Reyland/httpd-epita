@@ -12,8 +12,8 @@ void connexion_close_header(struct response *resp);
 
 void set_header_server_name(struct response *resp, struct vhost *vhost);
 
-struct response *set_error_response(struct vhost *vhost,
-                                           struct response *resp, size_t *err);
+struct response *set_error_response(struct vhost *vhost, struct response *resp,
+                                    size_t *err);
 
 void set_status_code_header(size_t *err, struct response *resp);
 

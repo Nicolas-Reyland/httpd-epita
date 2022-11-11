@@ -4,8 +4,8 @@
 #include <stdio.h>
 
 #include "network/server_env.h"
-#include "utils/parsers/config/config_parser.h"
 #include "utils/logging.h"
+#include "utils/parsers/config/config_parser.h"
 
 #ifndef LOG_LEVEL
 #    define LOG_LEVEL LOG_EPITA

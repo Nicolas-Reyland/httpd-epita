@@ -406,8 +406,7 @@ struct request *parser_request(char *raw_request, size_t size, size_t *err)
         || is_not_protocol_valid(req->version, err)
         || not_contain_host(req->hash_map->data[0], err))
     {
-        free_request(req);
-        return NULL;
+        return req;
     }
     return req;
 }

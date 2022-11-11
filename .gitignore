@@ -3,6 +3,7 @@ httpd
 httpd-test
 a.out
 
+*.bak
 *.log
 
 # :(

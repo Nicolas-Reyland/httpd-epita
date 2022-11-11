@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "utils/logging.h"
-#include "signals/handlers.h"
+#include "process/sig_handlers.h"
 
 #define READ_BUFF_SIZE 4096
 

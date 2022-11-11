@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "utils/mem.h"
 #include "utils/logging.h"
+#include "utils/mem.h"
 #include "utils/string_utils.h"
 
 #define HASH_MAP_SIZE 3
@@ -178,7 +178,7 @@ struct server_config *fill_server_config(struct server_config *config)
             {
                 log_message(LOG_STDERR | LOG_EPITA,
                             "%s: missing mandatory key in vhost[%zu]: '%s'\n",
-                            config->filename,i,  key);
+                            config->filename, i, key);
                 free_server_config(config, true);
                 return NULL;
             };

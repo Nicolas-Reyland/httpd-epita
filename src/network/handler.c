@@ -141,7 +141,7 @@ void process_data(struct server_env *env, int event_index, char *data,
     return;
 
     // CODE PROPRE REPREND ICI
-    //safe_write(client_socket_fd, reply, reply_size);
+    // safe_write(client_socket_fd, reply, reply_size);
 }
 
 bool incoming_connection(struct server_env *env, int client_socket_fd)

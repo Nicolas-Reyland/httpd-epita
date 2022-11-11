@@ -1,21 +1,22 @@
-#include "utils/reponse/reponse.h"
 #include "utils/reponse/tools_response/tools_response.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include "utils/logging.h"
+
 #include "process/sig_handlers.h"
 #include <limits.h>
+#include "utils/logging.h"
+#include "utils/reponse/reponse.h"
 
 #define READ_BUFF_SIZE 4096
 #define _XOPEN_SOURCE_EXTENDED 1
 
-int isDir(const char* fileName)
+int isDir(const char *fileName)
 {
     struct stat path;
 
@@ -44,7 +45,7 @@ int is_path_traversal_attack(char *path, struct vhost *vhost)
  *   vhost = vhost that the server gave to extract the root dir
  *   Function: return the full path of the ressource concat with
  *             the root dir from vhost
- */ 
+ */
 char *get_path_ressource(char *target, struct vhost *vhost)
 {
     char *root_dir = hash_map_get(vhost->map, "root_dir");
@@ -53,12 +54,13 @@ char *get_path_ressource(char *target, struct vhost *vhost)
     path = realloc(path, strlen(path) + strlen(target) + 1);
     path = strcat(path, target);
 
-    //check if path is a directory and if it is, add the default file to the path
+    // check if path is a directory and if it is, add the default file to the
+    // path
     int is_dir = isDir(path);
     if (is_dir != 0)
     {
         char *default_file = hash_map_get(vhost->map, "default_file");
-        if(!default_file)
+        if (!default_file)
         {
             // TODO: MEMORY LEAKS
             log_error("Default file doesn t exist in Vhost config\n");

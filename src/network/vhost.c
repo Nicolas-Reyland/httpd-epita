@@ -1,9 +1,12 @@
 #include "vhost.h"
 
+#include <string.h>
 #include <unistd.h>
 
+#include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
+#include "utils/state.h"
 
 #define VHOST_VECTOR_INIT_SIZE 10
 
@@ -21,6 +24,8 @@ struct vhost *init_vhosts(struct server_config *config)
         vhosts[i].clients = vector_init(VHOST_VECTOR_INIT_SIZE);
         // TODO: OOM check
         vhosts[i].map = config->vhosts[i];
+        vhosts[i].client_ips =
+            g_state.logging ? vector_str_init(VHOST_VECTOR_INIT_SIZE) : NULL;
     }
 
     return vhosts;
@@ -34,6 +39,7 @@ void free_vhost(struct vhost *vhost, bool free_config, bool free_obj)
     for (size_t i = 0; i < vhost->clients->size; ++i)
         close(vhost->clients->data[i]);
     free_vector(vhost->clients);
+    free_vector_str(vhost->client_ips);
     if (free_obj)
         free(vhost);
 }

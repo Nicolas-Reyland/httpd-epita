@@ -1,6 +1,5 @@
 #include "vector.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "utils/mem.h"
@@ -69,23 +68,6 @@ struct vector *vector_append(struct vector *v, int elt)
 
     v->data[v->size++] = elt;
     return v;
-}
-
-/*
-** Display the vector contents on `stdout`.
-** Displays `\n` if `v` is `NULL`.
-*/
-void vector_print(const struct vector *v)
-{
-    if (v == NULL || v->size == 0)
-    {
-        putchar('\n');
-        return;
-    }
-    printf("%d", v->data[0]);
-    for (size_t i = 1; i < v->size; i++)
-        printf(",%d", v->data[i]);
-    putchar('\n');
 }
 
 /*

@@ -4,6 +4,7 @@
 #include <netdb.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -15,7 +16,9 @@
 #include "utils/parsers/http/parser_request.h"
 #include "utils/reponse/reponse.h"
 #include "utils/socket_utils.h"
+#include "utils/state.h"
 #include "utils/vector/vector.h"
+#include "utils/vector_str/vector_str.h"
 
 static struct vhost *vhost_from_host_socket(struct server_env *env,
                                             int socket_fd);
@@ -85,6 +88,9 @@ void register_connection(struct server_env *env, int host_socket_fd)
 
         // register client socket fd to vhost
         vector_append(vhost->clients, client_socket_fd);
+        // register ip address for logging (if needed)
+        if (g_state.logging)
+            vector_str_append(vhost->client_ips, strdup(host_buffer));
     }
 }
 
@@ -119,10 +125,10 @@ void process_data(struct server_env *env, int event_index, char *data,
         return;
     }
 
-    printf("Got: '''\n");
+    log_message(LOG_STDOUT | LOG_DEBUG, "Got: '''\n");
     for (size_t i = 0; i < size; ++i)
-        printf("%c", data[i]);
-    printf("\n'''\n");
+        log_message(LOG_STDOUT | LOG_DEBUG, "%c", data[i]);
+    log_message(LOG_STDOUT | LOG_DEBUG, "\n'''\n");
 
     int client_socket_fd = env->events[event_index].data.fd;
     ssize_t index;
@@ -130,13 +136,13 @@ void process_data(struct server_env *env, int event_index, char *data,
         vhost_from_client_socket(env, client_socket_fd, &index);
 
     // CODE DE CE MEC, LA
-    struct response *resp = parsing_http(data, size, vhost);
+    struct response *resp = parsing_http(data, size, vhost, index);
     write(client_socket_fd, resp->res, resp->res_len);
 
-    printf("Got: '''\n");
+    log_message(LOG_STDOUT | LOG_DEBUG, "Got: '''\n");
     for (size_t i = 0; i < resp->res_len; ++i)
-        printf("%c", resp->res[i]);
-    printf("\n'''\n");
+        log_message(LOG_STDOUT | LOG_DEBUG, "%c", resp->res[i]);
+    log_message(LOG_STDOUT | LOG_DEBUG, "\n'''\n");
     free_response(resp);
     return;
 

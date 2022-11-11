@@ -1,72 +1,96 @@
-#include "utils/reponse/reponse.h"
+#include "utils/reponse/log_functions_http_parsing/log_functions_http_parsing.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #include "utils/logging.h"
+#include "utils/reponse/reponse.h"
 #include "utils/state.h"
-#include "utils/reponse/log_functions_http_parsing/log_functions_http_parsing.h"
 
 //--------------------------------------------------------------------------------
-//------------------------------LOG functions-------------------------------------
+//------------------------------LOG
+// functions-------------------------------------
 //--------------------------------------------------------------------------------
-void log_request(struct vhost *vhost, struct request *req, size_t *status_code)
+
+static char *get_client_ip(struct vhost *vhost, ssize_t index);
+
+void log_request(struct vhost *vhost, struct request *req, size_t *status_code,
+                 ssize_t index)
 {
-    char *log_value = hash_map_get(g_state.env->config->global,"log");
-    int logging = log_value != NULL && strcmp(log_value, "true") == 0;
-    if (!logging)
-    {
+    if (!g_state.logging)
         return;
-    }
+
     time_t timestamp = time(NULL);
     struct tm *pTime = localtime(&timestamp);
 
-    char *buffer = malloc(50);
+    char buffer[50];
     strftime(buffer, 50, "%a, %d %b %Y %H:%M:%S GMT", pTime);
-    buffer = realloc(buffer,strlen(buffer)+1);
-    
-    char *serv_name = hash_map_get(vhost->map,"server_name");
+    char *client_ip = get_client_ip(vhost, index);
+
+    char *serv_name = hash_map_get(vhost->map, "server_name");
     if (req && *status_code == 200)
     {
-        log_message(LOG_STDOUT | LOG_EPITA, "%s [%s] received %s on '%s' from 0.0.0.0\n", buffer,serv_name,req->method, req->target);
+        log_message(LOG_STDOUT | LOG_EPITA,
+                    "%s [%s] received %s on '%s' from %s\n", buffer, serv_name,
+                    req->method, req->target, client_ip);
     }
     else
     {
-        log_message(LOG_STDOUT | LOG_EPITA, "%s [%s] received Bad Request from 0.0.0.0\n", buffer,serv_name);
+        log_message(LOG_STDOUT | LOG_EPITA,
+                    "%s [%s] received Bad Request from %s\n", buffer, serv_name,
+                    client_ip);
     }
-    free(buffer);
 }
 
-void log_response(struct vhost *vhost, struct request *req, size_t *status_code)
+void log_response(struct vhost *vhost, struct request *req, size_t *status_code,
+                  ssize_t index)
 {
-    char *log_value = hash_map_get(g_state.env->config->global,"log");
-    int logging = log_value != NULL && strcmp(log_value, "true") == 0;
-    if (!logging)
-    {
+    if (!g_state.logging)
         return;
-    }
+
     time_t timestamp = time(NULL);
     struct tm *pTime = localtime(&timestamp);
 
-    char *buffer = malloc(50);
+    char buffer[50];
     strftime(buffer, 50, "%a, %d %b %Y %H:%M:%S GMT", pTime);
-    buffer = realloc(buffer,strlen(buffer)+1);
-    
-    char *serv_name = hash_map_get(vhost->map,"server_name");
+    char *client_ip = get_client_ip(vhost, index);
+
+    char *serv_name = hash_map_get(vhost->map, "server_name");
     if (req && *status_code != 400 && *status_code != 405)
     {
-        log_message(LOG_STDOUT | LOG_EPITA, "%s [%s] responding with %zu to 0.0.0.0 for %s on '%s'\n", buffer,serv_name,*status_code, req->method, req->target);
+        log_message(LOG_STDOUT | LOG_EPITA,
+                    "%s [%s] responding with %zu to %s for %s on '%s'\n",
+                    buffer, serv_name, *status_code, client_ip, req->method,
+                    req->target);
     }
-    else if(*status_code == 400)
+    else if (*status_code == 400)
     {
-        log_message(LOG_STDOUT | LOG_EPITA, "%s [%s] responding with %zu to 0.0.0.0\n", buffer,serv_name,*status_code);
+        log_message(LOG_STDOUT | LOG_EPITA,
+                    "%s [%s] responding with %zu to %s\n", buffer, serv_name,
+                    *status_code, client_ip);
     }
-    else if(*status_code == 405)
+    else if (*status_code == 405)
     {
-        log_message(LOG_STDOUT | LOG_EPITA, "%s [%s] responding with %zu to 0.0.0.0 for UNKNOWN on '%s'\n", buffer,serv_name,*status_code, req->target);
+        log_message(LOG_STDOUT | LOG_EPITA,
+                    "%s [%s] responding with %zu to %s for UNKNOWN on '%s'\n",
+                    buffer, serv_name, *status_code, client_ip, req->target);
     }
-    free(buffer);
 }
+
+char *get_client_ip(struct vhost *vhost, ssize_t index)
+{
+    if (index == -1 || vhost->client_ips == NULL)
+        return "???";
+    size_t index_t = index;
+    if (index_t >= vhost->client_ips->size)
+        return "(unknown address)";
+
+    return vhost->client_ips->data[index];
+}
+
 //------------------------------------------------------------------------------------
-//------------------------------END LOG functions-------------------------------------
+//------------------------------END LOG
+// functions-------------------------------------
 //------------------------------------------------------------------------------------

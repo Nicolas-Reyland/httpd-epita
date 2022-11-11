@@ -393,7 +393,8 @@ static int is_not_method_allowed(char *method, size_t *err)
  *             return a struct request fullfilled, in case of error
  *              sets the *err pointer to the number of the error
  */
-struct request *parser_request(char *raw_request, size_t size, size_t *err)
+struct request *parser_request(char *raw_request, size_t size, size_t *err,
+                               ssize_t index)
 {
     struct request *req = sub_parser_request(raw_request, size);
     if (!req)
@@ -401,6 +402,7 @@ struct request *parser_request(char *raw_request, size_t size, size_t *err)
         *err = REQUEST_ERR;
         return NULL;
     }
+    req->index = index;
 
     if (is_not_method_allowed(req->method, err)
         || is_not_protocol_valid(req->version, err)

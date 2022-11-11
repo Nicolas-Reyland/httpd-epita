@@ -1,20 +1,21 @@
 #include "utils/reponse/reponse.h"
-#include "utils/reponse/set_header_response/set_header_response.h"
-#include "utils/reponse/tools_response/tools_response.h"
-#include "utils/reponse/log_functions_http_parsing/log_functions_http_parsing.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
 #include "utils/logging.h"
+#include "utils/reponse/log_functions_http_parsing/log_functions_http_parsing.h"
+#include "utils/reponse/set_header_response/set_header_response.h"
+#include "utils/reponse/tools_response/tools_response.h"
 #include "utils/state.h"
 
 static struct response *init_response(void);
 
 static struct response *create_response(size_t *err, struct vhost *vhost,
-                                 struct request *req);
+                                        struct request *req);
 
 /*
  *   void paramater
@@ -47,7 +48,7 @@ struct response *create_response(size_t *err, struct vhost *vhost,
         return NULL;
     set_status_code_header(err, resp); // set header
     set_date_gmt_header(resp); // set header date
-    set_header_server_name(resp,vhost);//set header server_name
+    set_header_server_name(resp, vhost); // set header server_name
     char *path = get_path_ressource(req->target, vhost);
     size_t size_ressource = 0;
     char *ressource = put_ressource_resp(path, &size_ressource, vhost, err);
@@ -73,15 +74,15 @@ struct response *create_response(size_t *err, struct vhost *vhost,
 }
 
 struct response *parsing_http(char *request_raw, size_t size,
-                              struct vhost *vhost)
+                              struct vhost *vhost, ssize_t index)
 {
     size_t err = 200;
-    struct request *req = parser_request(request_raw, size, &err);
-    log_request(vhost,req, &err);
+    struct request *req = parser_request(request_raw, size, &err, index);
+    log_request(vhost, req, &err, index);
 
     if (err != 200)
     {
-        log_response(vhost, req, &err);
+        log_response(vhost, req, &err, index);
         struct response *resp = init_response();
         if (!resp)
             return NULL;
@@ -89,7 +90,7 @@ struct response *parsing_http(char *request_raw, size_t size,
         return set_error_response(vhost, resp, &err);
     }
     struct response *resp = create_response(&err, vhost, req);
-    log_response(vhost, req, &err);
+    log_response(vhost, req, &err, index);
     free_request(req);
     return resp;
 }

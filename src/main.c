@@ -5,8 +5,8 @@
 #    include <string.h>
 
 #    include "network/server.h"
+#    include "process/daemons.h"
 #    include "utils/arg_flags.h"
-#    include "utils/daemons.h"
 #    include "utils/hash_map/hash_map.h"
 #    include "utils/logging.h"
 #    include "utils/parsers/config/config_parser.h"
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     if (flags & CMD_FLAG_DAEMON)
         handle_daemon(config, flags);
 
-    start_all(config);
+    start_all(config, NULL);
 }
 
 char *read_cmd_args(int argc, char **argv, int *flags)

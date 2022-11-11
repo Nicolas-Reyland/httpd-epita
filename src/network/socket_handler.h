@@ -1,5 +1,5 @@
-#ifndef HANDLER_H
-#define HANDLER_H
+#ifndef SOCKET_HANDLER_H
+#define SOCKET_HANDLER_H
 
 #include "network/server_env.h"
 
@@ -12,4 +12,4 @@ bool incoming_connection(struct server_env *env, int client_socket_fd);
 
 void close_connection(struct server_env *env, int client_socket_fd);
 
-#endif /* HANDLER_H */
+#endif /* !SOCKET_HANDLER_H */

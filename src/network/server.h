@@ -3,10 +3,10 @@
 
 #include <stdnoreturn.h>
 
-#include "server_env.h"
+#include "network/server_env.h"
 #include "utils/parsers/config/config_parser.h"
 
-_Noreturn void start_all(struct server_config *config);
+_Noreturn void start_all(struct server_config *config, char *pid_file);
 
 _Noreturn void run_server(struct server_env *env);
 

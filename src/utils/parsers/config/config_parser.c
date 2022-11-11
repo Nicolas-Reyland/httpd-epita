@@ -187,15 +187,37 @@ struct server_config *fill_server_config(struct server_config *config)
         insert_if_not_present(vhost_map, "default_file", "index.html");
         char *root_dir = hash_map_get(vhost_map, "root_dir");
         char *path_buffer = malloc(PATH_MAX);
-        char *resolved_path = realpath(root_dir, path_buffer);
-        if (resolved_path == NULL)
+        if(root_dir[0] == '~')
         {
-            free(path_buffer);
-            hash_map_remove(vhost_map, "root_dir");
-            continue;
+            char *home = getenv("HOME");
+            char *new_root_dir = malloc(strlen(root_dir) + strlen(home) + 1);
+            new_root_dir = strcpy(new_root_dir,home);
+            root_dir++;
+            strcat(new_root_dir, root_dir);
+            char *resolved_path = realpath(new_root_dir, path_buffer);
+            if (resolved_path == NULL)
+            {
+                free(path_buffer);
+                hash_map_remove(vhost_map, "root_dir");
+                continue;
+            }
+            resolved_path = realloc(resolved_path, strlen(resolved_path)+1);
+            hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
+            free(new_root_dir);
+            
         }
-        resolved_path = realloc(resolved_path, strlen(resolved_path)+1);
-        hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
+        else
+        {
+            char *resolved_path = realpath(root_dir, path_buffer);
+            if (resolved_path == NULL)
+            {
+                free(path_buffer);
+                hash_map_remove(vhost_map, "root_dir");
+                continue;
+            }
+            resolved_path = realloc(resolved_path, strlen(resolved_path)+1);
+            hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
+        }
     }
 
     return config;

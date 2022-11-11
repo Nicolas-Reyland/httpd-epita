@@ -35,6 +35,7 @@ static struct server_env *setup_server(struct server_config *config);
 
 _Noreturn void start_all(struct server_config *config, char *pid_file)
 {
+    log_info("Starting server [%d]\n", getpid());
     if (write_process_pid(pid_file) == -1)
     {
         log_error("Could not write process pid to file at '%s'\n", pid_file);
@@ -154,8 +155,6 @@ _Noreturn void run_server(struct server_env *env)
     exit(EXIT_SUCCESS);
 }
 
-static int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost);
-
 /*
  * Setup the following things :
  *  - vhosts socket file descriptors
@@ -200,8 +199,7 @@ struct server_env *setup_server(struct server_config *config)
         char *vhost_port = hash_map_get(config->vhosts[i], "port");
         log_message(LOG_STDOUT | LOG_DEBUG, "Adding vhost @ %s:%s\n",
                     vhost_ip_addr, vhost_port);
-        vhosts[i].socket_fd =
-            setup_socket(epoll_fd, vhost_ip_addr, vhost_port, true);
+        vhosts[i].socket_fd = setup_socket(epoll_fd, vhost_ip_addr, vhost_port);
 
         if (vhosts[i].socket_fd == -1)
         {
@@ -224,16 +222,15 @@ struct server_env *setup_server(struct server_config *config)
     return env;
 }
 
-static int create_socket(char *ip_addr, char *port, bool is_vhost);
+static int create_socket(char *ip_addr, char *port);
 
-int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost)
+int setup_socket(int epoll_fd, char *ip_addr, char *port)
 {
     if (ip_addr == NULL || port == NULL)
         return -1;
 
-    (void)is_vhost;
     // First, get a socket for this config
-    int socket_fd = create_socket(ip_addr, port, is_vhost);
+    int socket_fd = create_socket(ip_addr, port);
     if (socket_fd == -1)
     {
         // TODO: logging (could not create socket or smthin)
@@ -282,7 +279,7 @@ int setup_socket(int epoll_fd, char *ip_addr, char *port, bool is_vhost)
     return socket_fd;
 }
 
-int create_socket(char *ip_addr, char *port, bool is_vhost)
+int create_socket(char *ip_addr, char *port)
 {
     struct addrinfo hints = { 0 }; // init all fields to zero
     hints.ai_flags = AI_PASSIVE; // All interfaces
@@ -326,14 +323,11 @@ int create_socket(char *ip_addr, char *port, bool is_vhost)
             continue;
 
         // TODO: only for vhost, or also for the global server ?
-        if (is_vhost || true)
-        {
-            int override = 1;
-            if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &override,
-                           sizeof(int))
-                == -1)
-                continue;
-        }
+        int override = 1;
+        if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &override,
+                       sizeof(int))
+            == -1)
+            continue;
 
         if (bind(socket_fd, addr_ptr, sizeof(struct sockaddr_in)) == 0)
             // Successful bind

@@ -7,6 +7,36 @@
 
 static void vlog_message(int flags, const char *format, va_list args);
 
+void log_debug(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    vlog_message(LOG_STDOUT | LOG_DEBUG, format, args);
+
+    va_end(args);
+}
+
+void log_info(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    vlog_message(LOG_STDOUT | LOG_INFO, format, args);
+
+    va_end(args);
+}
+
+void log_warn(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    vlog_message(LOG_STDERR | LOG_WARN, format, args);
+
+    va_end(args);
+}
+
 void log_message(int flags, const char *format, ...)
 {
     va_list args;

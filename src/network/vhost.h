@@ -9,6 +9,8 @@
 #include "utils/vector/vector.h"
 #include "utils/vector_str/vector_str.h"
 
+#define VHOST_VECTOR_INIT_SIZE 10
+
 struct vhost
 {
     int socket_fd;

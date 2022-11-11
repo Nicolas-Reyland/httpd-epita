@@ -7,6 +7,8 @@
 
 #include "network/server_env.h"
 #include "network/vhost.h"
+#include "utils/logging.h"
+#include "utils/reload_config.h"
 #include "utils/state.h"
 
 void signal_handler(int signum)
@@ -18,7 +20,11 @@ void signal_handler(int signum)
         graceful_shutdown();
         break;
     case SIGPIPE:
-
+        log_warn("Caught SIGPIPE :(\n");
+        break;
+    case SIGUSR1:
+        reload_config();
+        break;
     default:
         log_error("Unknown signal %s\n", strsignal(signum));
         break;

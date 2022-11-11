@@ -35,7 +35,7 @@ void signal_handler(int signum)
     {
     case SIGINT:
     case SIGTERM:
-        gracefull_shutdown();
+        graceful_shutdown();
         break;
     case SIGPIPE:
 

@@ -3,6 +3,6 @@
 
 #include <stdnoreturn.h>
 
-_Noreturn void gracefull_shutdown(void);
+_Noreturn void graceful_shutdown(void);
 
 #endif /* HANDLERS_H */

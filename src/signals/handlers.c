@@ -6,7 +6,7 @@
 #include "network/server_env.h"
 #include "network/vhost.h"
 #include "utils/state.h"
-_Noreturn void gracefull_shutdown(void)
+_Noreturn void graceful_shutdown(void)
 {
     log_message(LOG_STDOUT | LOG_DEBUG, "Gracefully killing self...\n");
 

@@ -47,7 +47,7 @@ _Noreturn void start_all(int num_threads, struct server_config *config)
 
     // Setup the signal handlers
     if (setup_signal_handlers() == -1)
-        gracefull_shutdown();
+        graceful_shutdown();
 
     // Everything is up and ready ! Get it running !!!
     run_server(env);

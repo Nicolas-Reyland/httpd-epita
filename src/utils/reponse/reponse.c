@@ -50,6 +50,11 @@ struct response *create_response(size_t *err, struct vhost *vhost,
     set_date_gmt_header(resp); // set header date
     set_header_server_name(resp, vhost); // set header server_name
     char *path = get_path_ressource(req->target, vhost);
+    if(!path)
+    {
+        *err = 404;
+        return set_error_response(vhost, resp, err);
+    }
     size_t size_ressource = 0;
     char *ressource = put_ressource_resp(path, &size_ressource, vhost, err);
     if (*err != 200) // in case of error, just send a response with the header

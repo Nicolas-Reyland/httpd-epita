@@ -49,6 +49,11 @@ int is_path_traversal_attack(char *path, struct vhost *vhost)
 char *get_path_ressource(char *target, struct vhost *vhost)
 {
     char *root_dir = hash_map_get(vhost->map, "root_dir");
+    if(!root_dir)
+    {
+        log_error("NICO ARRETE DE ME DONNER DES ROOT DIR NULL\n");
+        return NULL;
+    }
     char *path = malloc(strlen(root_dir) + 1);
     path = strcpy(path, root_dir);
     path = realloc(path, strlen(path) + strlen(target) + 1);

@@ -99,7 +99,7 @@ int update_vhosts(struct server_config *new_config)
     void *new_vhosts =
         realloc(g_state.env->vhosts, real_num_vhosts * sizeof(struct vhost));
     void *new_vhost_maps = realloc(g_state.env->config->vhosts,
-                                   real_num_vhosts * sizeof(struct hash_map));
+                                   real_num_vhosts * sizeof(struct hash_map *));
     if (new_vhosts == NULL || new_vhost_maps == NULL)
     {
         log_error("%s: Out of memory\n");
@@ -107,6 +107,8 @@ int update_vhosts(struct server_config *new_config)
         free(new_vhost_maps);
         return -1;
     }
+    g_state.env->vhosts = new_vhosts;
+    g_state.env->config->vhosts = new_vhost_maps;
 
     // Add the new vhosts, that were not present in the old config
     for (size_t i = 0; i < new_config->num_vhosts; ++i)

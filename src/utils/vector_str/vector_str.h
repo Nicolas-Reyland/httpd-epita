@@ -1,5 +1,5 @@
-#ifndef VECTOR_H
-#define VECTOR_H
+#ifndef VECTOR_STR_H
+#define VECTOR_STR_H
 
 #include <stddef.h>
 #include <sys/types.h>
@@ -40,12 +40,6 @@ struct vector_str *vector_str_resize(struct vector_str *v, size_t n);
 struct vector_str *vector_str_append(struct vector_str *v, char *s);
 
 /*
-** Remove all the elements of the vector_str, and resize it to `n` capacity.
-** Returns `NULL` if an error occured.
-*/
-struct vector_str *vector_str_reset(struct vector_str *v, size_t n);
-
-/*
 ** Returns the index of 's' in 'v' if it present, and -1 otherwise.
 **/
 ssize_t vector_str_find(struct vector_str *v, char *s);
@@ -56,4 +50,4 @@ ssize_t vector_str_find(struct vector_str *v, char *s);
 */
 struct vector_str *vector_str_remove(struct vector_str *v, size_t i);
 
-#endif /* !VECTOR_H */
+#endif /* !VECTOR_STR_H */

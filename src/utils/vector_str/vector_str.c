@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils/logging.h"
 #include "utils/mem.h"
 
 /*
@@ -11,11 +12,20 @@
 */
 struct vector_str *vector_str_init(size_t n)
 {
-    char **data = malloc(n * sizeof(char *));
+    char **data = calloc(n, sizeof(char *));
     if (data == NULL)
+    {
+        log_error("%s: Out of memory (data: %zu)\n", __func__, n);
         return NULL;
+    }
     struct vector_str tmp = { 0, n, data };
     struct vector_str *v = malloc(sizeof(struct vector_str));
+    if (v == NULL)
+    {
+        free(data);
+        log_error("%s: Out of memory (struct)\n", __func__);
+        return NULL;
+    }
     *v = tmp;
     return v;
 }
@@ -61,7 +71,10 @@ struct vector_str *vector_str_resize(struct vector_str *v, size_t n)
 struct vector_str *vector_str_append(struct vector_str *v, char *s)
 {
     if (v == NULL)
+    {
+        free(s);
         return NULL;
+    }
 
     if (v->size == v->capacity)
     {
@@ -71,19 +84,6 @@ struct vector_str *vector_str_append(struct vector_str *v, char *s)
     }
 
     v->data[v->size++] = s;
-    return v;
-}
-
-/*
-** Remove all the elements of the vector_str, and resize it to `n` capacity.
-** Returns `NULL` if an error occured.
-*/
-struct vector_str *vector_str_reset(struct vector_str *v, size_t n)
-{
-    v->data = realloc(v->data, (v->capacity = n) * sizeof(char *));
-    if (v->data == NULL)
-        return NULL;
-    v->size = 0;
     return v;
 }
 

@@ -11,8 +11,6 @@ void setup_g_state(struct server_env *env)
     g_state.env = env;
     g_state.log_level = LOG_LEVEL;
     g_state.num_threads = NUM_THREADS;
-    char *log_value = hash_map_get(env->config->global, "log");
-    g_state.logging = log_value == NULL ? true : strcmp(log_value, "true") == 0;
     if (g_state.logging)
     {
         char *log_file_path = hash_map_get(env->config->global, "log_file");
@@ -21,4 +19,10 @@ void setup_g_state(struct server_env *env)
     }
     else
         g_state.log_file = NULL;
+}
+
+void set_g_state_logging(struct server_config *config)
+{
+    char *log_value = hash_map_get(config->global, "log");
+    g_state.logging = log_value == NULL ? true : strcmp(log_value, "true") == 0;
 }

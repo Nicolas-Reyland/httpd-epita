@@ -81,8 +81,11 @@ void log_response(struct vhost *vhost, struct request *req, size_t *status_code,
 
 char *get_client_ip(struct vhost *vhost, ssize_t index)
 {
-    if (index == -1)
+    if (index == -1 || vhost->client_ips == NULL)
         return "???";
+    size_t index_t = index;
+    if (index_t >= vhost->client_ips->size)
+        return "(unknown address)";
 
     return vhost->client_ips->data[index];
 }

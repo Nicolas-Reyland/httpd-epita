@@ -39,7 +39,7 @@ void free_vhost(struct vhost *vhost, bool free_config, bool free_obj)
     for (size_t i = 0; i < vhost->clients->size; ++i)
         close(vhost->clients->data[i]);
     free_vector(vhost->clients);
-    free_vector_str(vhost->client_ips, true);
+    free_vector_str(vhost->client_ips);
     if (free_obj)
         free(vhost);
 }

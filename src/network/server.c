@@ -41,6 +41,7 @@ _Noreturn void start_all(struct server_config *config, char *pid_file)
         exit(EXIT_FAILURE);
     }
 
+    set_g_state_logging(config);
     struct server_env *env = setup_server(config);
     if (env == NULL)
     {

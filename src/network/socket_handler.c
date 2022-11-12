@@ -18,8 +18,7 @@
 #include "utils/response/response.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
-#include "utils/vector/vector.h"
-#include "utils/vector_str/vector_str.h"
+#include "utils/vector_client/vector_client.h"
 
 #define DEBUG_MAX_DATA_SIZE 300
 
@@ -90,10 +89,10 @@ void register_connection(struct server_env *env, int host_socket_fd)
         }
 
         // register client socket fd to vhost
-        vector_append(vhost->clients, client_socket_fd);
-        // register ip address for logging (if needed)
-        if (g_state.logging)
-            vector_str_append(vhost->client_ips, strdup(host_buffer));
+        char *client_ip_addr = g_state.logging ? strdup(host_buffer) : NULL;
+        struct client *new_client =
+            init_client(vhost, client_socket_fd, client_ip_addr);
+        vector_client_append(vhost->clients, new_client);
     }
 }
 
@@ -111,7 +110,7 @@ struct vhost *vhost_from_client_socket(struct server_env *env, int socket_fd,
 {
     for (size_t i = 0; i < env->config->num_vhosts; ++i)
     {
-        *index = vector_find(env->vhosts[i].clients, socket_fd);
+        *index = vector_client_find(env->vhosts[i].clients, socket_fd);
         if (*index != -1)
             return env->vhosts + i;
     }
@@ -183,5 +182,5 @@ void close_connection(struct server_env *env, int client_socket_fd)
                   client_socket_fd);
         return;
     }
-    vector_remove(vhost->clients, index);
+    vector_client_remove(vhost->clients, index);
 }

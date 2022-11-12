@@ -6,21 +6,20 @@
 
 #include "utils/hash_map/hash_map.h"
 #include "utils/parsers/config/config_parser.h"
-#include "utils/vector/vector.h"
-#include "utils/vector_str/vector_str.h"
+#include "utils/vector_client/vector_client.h"
 
 #define VHOST_VECTOR_INIT_SIZE 10
 
 struct vhost
 {
     int socket_fd;
-    struct vector *clients;
+    struct vector_client *clients;
     struct hash_map *map;
     struct vector_str *client_ips;
 };
 
 struct vhost *init_vhosts(struct server_config *config);
 
-void free_vhost(struct vhost *vhost, bool free_config, bool free_obj);
+void free_vhost(struct vhost *vhost, bool free_map, bool free_obj);
 
 #endif /* VHOST_H */

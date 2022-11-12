@@ -5,8 +5,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "utils/logging.h"
 #include "response/response.h"
+#include "utils/logging.h"
 
 //--------------------------------------------------------------------------------
 //------------------------------Set header
@@ -50,7 +50,6 @@ void set_header_content_length(size_t content_len, struct response *resp)
     char *res = alloca(50);
     sprintf(res, "Content-Length: %zu\r\n", content_len);
     size_t size = strlen(res);
-    log_debug("Writing \"%s\" to resp\n", res);
     realloc_and_concat(resp, res, size, false);
 }
 

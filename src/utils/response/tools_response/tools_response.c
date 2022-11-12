@@ -115,8 +115,6 @@ int open_ressource(char *path, struct response *resp, struct vhost *vhost,
     }
 
     resp->file_len = 0;
-    if (!open_file)
-        return 0;
 
     if ((resp->fd = open(path, O_RDONLY)) == -1)
     {
@@ -135,6 +133,11 @@ int open_ressource(char *path, struct response *resp, struct vhost *vhost,
     }
 
     resp->file_len = statbuf.st_size;
+    if (!open_file)
+    {
+        close(resp->fd);
+        resp->fd = -1;
+    }
     return 0;
 }
 

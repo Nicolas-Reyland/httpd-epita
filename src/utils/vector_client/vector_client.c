@@ -115,7 +115,7 @@ struct vector_client *vector_client_append(struct vector_client *v,
             return NULL;
     }
 
-    v->data[v->size++] = client;
+    v->data[(client->index = v->size++)] = client;
     return v;
 }
 
@@ -123,18 +123,21 @@ struct vector_client *vector_client_append(struct vector_client *v,
 ** Remove the element at the index `i`.
 ** Replace it with the last element.
 ** Returns `NULL` if an error occured.
+**
+** The client at index 'i' MUST be locked
+**
 */
 struct vector_client *vector_client_remove(struct vector_client *v, size_t i)
 {
     if (v == NULL || i >= v->size)
         return NULL;
 
+    // TODO: fix this !!!
     destroy_client(v->data[i], true);
+    struct client *last_client = get_client_at_index(v, --v->size, false);
     v->data[i] = v->data[v->size - 1];
-    --v->size;
+    v->data[i]->index = i;
 
-    if (v->size < v->capacity / 2)
-        return vector_client_resize(v, v->capacity / 2);
-
-    return v;
+    size_t half_cap = v->capacity / 2;
+    return v->size < half_cap ? vector_client_resize(v, half_cap) : v;
 }

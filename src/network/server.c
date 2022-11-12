@@ -110,13 +110,20 @@ _Noreturn void run_server(struct server_env *env)
             epoll_wait(env->epoll_fd, env->events, EPOLL_MAXEVENTS, -1);
         for (int i = 0; i < num_events; ++i)
         {
+            ssize_t index = -1;
             // Error has occured on file descriptor, or client closed connection
             int socket_fd = env->events[i].data.fd;
             if (env->events[i].events & (EPOLLHUP | EPOLLERR))
             {
                 // logging (errno ?)
                 log_error("Error occured in epoll: %d\n", env->events[i]);
-                close_connection(env, socket_fd);
+                struct job close_job = {
+                    .type = JOB_CLOSE,
+                    .socket_fd = socket_fd,
+                    .index = index,
+                };
+                add_job_to_queue(close_job);
+                // close_connection(env, socket_fd);
                 continue;
             }
             // File not available for reading, so just skipping it
@@ -126,14 +133,27 @@ _Noreturn void run_server(struct server_env *env)
                 continue;
             }
             // Event on the server socket: means there is one more client !
-            else if (incoming_connection(env, socket_fd))
+            else if ((index = incoming_connection(env, socket_fd)) != -1)
             {
                 // Maybe log new client connection ?
-                register_connection(env, socket_fd);
+                struct job accept_job = {
+                    .type = JOB_ACCEPT,
+                    .socket_fd = socket_fd,
+                    .index = index,
+                };
+                add_job_to_queue(accept_job);
+                // register_connection(env, socket_fd);
             }
             // There is data to be read
             else
             {
+                struct job process_job = {
+                    .type = JOB_PROCESS,
+                    .socket_fd = socket_fd,
+                    .index = index,
+                };
+                add_job_to_queue(process_job);
+                /*
                 bool alive;
                 size_t data_len;
                 char *data = read_from_connection(socket_fd, &data_len, &alive);
@@ -146,6 +166,7 @@ _Noreturn void run_server(struct server_env *env)
                 // doing it now, in the main loop
                 process_data(env, i, data, data_len);
                 free(data);
+                */
             }
         }
     }

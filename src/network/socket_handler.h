@@ -1,6 +1,8 @@
 #ifndef SOCKET_HANDLER_H
 #define SOCKET_HANDLER_H
 
+#include <sys/types.h>
+
 #include "network/server_env.h"
 
 void register_connection(struct server_env *env, int host_socket_fd);

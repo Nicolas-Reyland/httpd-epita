@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "multithreading/thread_safe_write.h"
+#include "network/client.h"
 #include "network/vhost.h"
 #include "response/response.h"
 #include "utils/hash_map/hash_map.h"
@@ -26,8 +27,8 @@
 static struct vhost *vhost_from_host_socket(struct server_env *env,
                                             int socket_fd);
 
-static struct vhost *vhost_from_client_socket(struct server_env *env,
-                                              int socket_fd, ssize_t *index);
+static struct client *client_from_client_socket(struct server_env *env,
+                                                int socket_fd, ssize_t *index);
 
 void register_connection(struct server_env *env, int host_socket_fd)
 {
@@ -106,14 +107,14 @@ struct vhost *vhost_from_host_socket(struct server_env *env, int socket_fd)
     return NULL;
 }
 
-struct vhost *vhost_from_client_socket(struct server_env *env, int socket_fd,
-                                       ssize_t *index)
+struct client *client_from_client_socket(struct server_env *env, int socket_fd)
 {
     for (size_t i = 0; i < env->config->num_vhosts; ++i)
     {
-        *index = vector_client_find(env->vhosts[i].clients, socket_fd);
-        if (*index != -1)
-            return env->vhosts + i;
+        struct client *client =
+            vector_client_find_nowait(env->vhosts[i]->clients, socket_fd);
+        if (client != NULL)
+            return client;
     }
 
     return NULL;
@@ -136,14 +137,13 @@ void process_data(struct server_env *env, int event_index, char *data,
 
     int client_socket_fd = env->events[event_index].data.fd;
     ssize_t index;
-    struct vhost *vhost =
-        vhost_from_client_socket(env, client_socket_fd, &index);
+    struct client *client =
+        client_from_client_socket(env, client_socket_fd, &index);
 
     // Shoul never occur, but ok why not...
-    if (index == -1)
+    if (client == NULL)
         return;
 
-    // CODE DE CE MEC, LA
     struct response *resp = parsing_http(data, size, client);
     thread_safe_write(vhost, index, resp);
 
@@ -156,13 +156,13 @@ void process_data(struct server_env *env, int event_index, char *data,
     free_response(resp);
 }
 
-bool incoming_connection(struct server_env *env, int client_socket_fd)
+ssize_t incoming_connection(struct server_env *env, int client_socket_fd)
 {
     for (size_t i = 0; i < env->config->num_vhosts; ++i)
         if (client_socket_fd == env->vhosts[i].socket_fd)
-            return true;
+            return i;
 
-    return false;
+    return -1;
 }
 
 void close_connection(struct server_env *env, int client_socket_fd)
@@ -175,9 +175,9 @@ void close_connection(struct server_env *env, int client_socket_fd)
     close(client_socket_fd);
     // remove link between vhost and client
     ssize_t index = -1;
-    struct vhost *vhost =
-        vhost_from_client_socket(env, client_socket_fd, &index);
-    if (vhost == NULL || index == -1)
+    struct client *client =
+        client_from_client_socket(env, client_socket_fd, &index);
+    if (client == NULL || index == -1)
     {
         log_error("%s: Could not find host associated to socket %d\n", __func__,
                   client_socket_fd);

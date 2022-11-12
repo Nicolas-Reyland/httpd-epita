@@ -6,12 +6,17 @@
 #include "utils/hash_map/hash_map.h"
 
 struct state g_state = {
+    // Server Environment
     .env = NULL,
+    // Logging
     .log_level = LOG_LEVEL,
     .logging = false,
     .log_file_stream = NULL,
+    // Multi-threading
     .num_threads = NUM_THREADS,
     .thread_ids = NULL,
+    .job_queue = NULL,
+    .queue_mutex = PTHREAD_MUTEX_INITIALIZER,
 };
 
 int setup_g_state(struct server_env *env)
@@ -36,7 +41,7 @@ int setup_g_state(struct server_env *env)
     else
         g_state.log_file_stream = NULL;
 
-    // Threads
+    // Multi-threading
     g_state.num_threads = NUM_THREADS;
     g_state.thread_ids = calloc(g_state.num_threads, sizeof(pthread_t));
     if (g_state.num_threads != 0 && g_state.thread_ids == NULL)

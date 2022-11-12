@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 #include "network/vhost.h"
 
@@ -11,6 +12,7 @@ struct client
     int socket_fd;
     char *ip_addr;
     struct vhost *vhost;
+    ssize_t index;
     pthread_mutex_t mutex;
 };
 

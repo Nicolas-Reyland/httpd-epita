@@ -28,7 +28,8 @@ struct client *init_client(struct vhost *vhost, int socket_fd, char *ip_addr)
         if ((error = pthread_mutex_init(&mutex, NULL)))
         {
             FREE_SET_NULL(client);
-            log_error("%s(pthread_mutex_init): %s\n", strerror(error));
+            log_error("%s(pthread_mutex_init): %s\n", __func__,
+                      strerror(error));
             return NULL;
         }
     }
@@ -36,6 +37,7 @@ struct client *init_client(struct vhost *vhost, int socket_fd, char *ip_addr)
     client->socket_fd = socket_fd;
     client->ip_addr = ip_addr;
     client->vhost = vhost;
+    client->index = -1;
     client->mutex = mutex;
 
     return client;

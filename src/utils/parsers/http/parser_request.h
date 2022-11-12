@@ -4,8 +4,8 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#include "utils/hash_map/hash_map.h"
 #include "network/vhost.h"
+#include "utils/hash_map/hash_map.h"
 
 struct request
 {
@@ -15,7 +15,7 @@ struct request
     size_t body_size;
     char *body;
     struct hash_map *hash_map;
-    ssize_t index;
+    // ssize_t index;
 };
 
 struct request *parser_request(char *raw_request, size_t size, int(*err),

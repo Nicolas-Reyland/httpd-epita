@@ -14,10 +14,9 @@
 // functions-------------------------------------
 //--------------------------------------------------------------------------------
 
-static char *get_client_ip(struct vhost *vhost, ssize_t index);
+static char *get_client_ip(struct client *client);
 
-void log_request(struct vhost *vhost, struct request *req, int *status_code,
-                 ssize_t index)
+void log_request(struct client *client, struct request *req, int *status_code)
 {
     if (!g_state.logging)
         return;
@@ -27,9 +26,9 @@ void log_request(struct vhost *vhost, struct request *req, int *status_code,
 
     char buffer[50];
     strftime(buffer, 50, "%a, %d %b %Y %H:%M:%S GMT", pTime);
-    char *client_ip = get_client_ip(vhost, index);
-
-    char *serv_name = hash_map_get(vhost->map, "server_name");
+    //char *client_ip = get_client_ip(vhost, index);
+    char *client_ip = client->ip_addr;
+    char *serv_name = hash_map_get(client->vhost->map, "server_name");
     if (req && *status_code == 200)
     {
         log_server("%s [%s] received %s on '%s' from %s\n", buffer, serv_name,
@@ -42,8 +41,7 @@ void log_request(struct vhost *vhost, struct request *req, int *status_code,
     }
 }
 
-void log_response(struct vhost *vhost, struct request *req, int *status_code,
-                  ssize_t index)
+void log_response(struct client *client, struct request *req, int *status_code)
 {
     if (!g_state.logging)
         return;
@@ -53,9 +51,9 @@ void log_response(struct vhost *vhost, struct request *req, int *status_code,
 
     char buffer[50];
     strftime(buffer, 50, "%a, %d %b %Y %H:%M:%S GMT", pTime);
-    char *client_ip = get_client_ip(vhost, index);
+    char *client_ip = get_client_ip(client);
 
-    char *serv_name = hash_map_get(vhost->map, "server_name");
+    char *serv_name = hash_map_get(client->vhost->map, "server_name");
     if (req && *status_code != 400 && *status_code != 405)
     {
         log_server("%s [%s] responding with %zu to %s for %s on '%s'\n", buffer,
@@ -74,15 +72,14 @@ void log_response(struct vhost *vhost, struct request *req, int *status_code,
     }
 }
 
-char *get_client_ip(struct vhost *vhost, ssize_t index)
+char *get_client_ip(struct client *client)
 {
-    if (index == -1 || vhost->client_ips == NULL)
+    if (!client || client->ip_addr == NULL)
         return "???";
-    size_t index_t = index;
-    if (index_t >= vhost->client_ips->size)
-        return "(unknown address)";
+    /*if (index_t >= vhost->client_ips->size)
+        return "(unknown address)";*/
 
-    return vhost->client_ips->data[index];
+    return client->ip_addr;
 }
 
 //------------------------------------------------------------------------------------

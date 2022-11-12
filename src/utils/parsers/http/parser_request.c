@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/parsers/error_parsing/error_parsing.h"
 #include "utils/string_utils.h"
-#include "utils/logging.h"
 
 static size_t end_token(char *request, size_t index, char *delim);
 
@@ -340,7 +340,7 @@ struct request *sub_parser_request(char *raw_request, size_t size)
 
 static int is_containning_column(char *str)
 {
-    for(int i = 0; str[i] != '\0'; i++)
+    for (int i = 0; str[i] != '\0'; i++)
     {
         if (str[i] == ':')
             return 1;
@@ -353,25 +353,29 @@ static int is_containning_column(char *str)
  *   Function: verify if there is the options host in req->options
  *              in case of error, set the *err and return the error number
  */
-static int not_contain_host(struct hash_map *hash_map, int(*err), struct vhost *vhost)
+static int not_contain_host(struct hash_map *hash_map, int(*err),
+                            struct vhost *vhost)
 {
-    if(!vhost)
+    if (!vhost)
     {
         return 403;
     }
-    char *value_request = hash_map_get(hash_map, "Host"); // if host is in the request
+    char *value_request =
+        hash_map_get(hash_map, "Host"); // if host is in the request
     char *ip_server = hash_map_get(vhost->map, "ip");
     char *port_server = hash_map_get(vhost->map, "port");
     log_error("len str = %zu\n", strlen(ip_server));
-    char *res = malloc(strlen(ip_server)+1);
+    char *res = malloc(strlen(ip_server) + 1);
     res = strcpy(res, ip_server);
-    if (value_request && is_containning_column(value_request) == 1)//if host is ip:port
+    if (value_request
+        && is_containning_column(value_request) == 1) // if host is ip:port
     {
-        res = realloc(res, strlen(res) + strlen(port_server) + 1 + 1);//'\0' + ':'
+        res = realloc(res,
+                      strlen(res) + strlen(port_server) + 1 + 1); //'\0' + ':'
         strcat(res, ":");
         strcat(res, port_server);
     }
-    if(value_request && strcmp(value_request, res) == 0)
+    if (value_request && strcmp(value_request, res) == 0)
     {
         free(res);
         return 0;
@@ -411,13 +415,17 @@ static int is_not_method_allowed(char *method, int(*err))
     return METHOD_NOT_ALLOWED;
 }
 
-static int verify_content_len_header(struct hash_map *hash_map, size_t body_size, int(*err))
+static int verify_content_len_header(struct hash_map *hash_map,
+                                     size_t body_size, int(*err))
 {
-    char *value_request = hash_map_get(hash_map, "Content-Length"); // if Content-Length header is in the request
+    char *value_request = hash_map_get(
+        hash_map,
+        "Content-Length"); // if Content-Length header is in the request
     size_t value_len = 0;
-    if(value_request)
+    if (value_request)
         value_len = atoi(value_request);
-    log_error("body size: %zu || value_request_size = %zu\n",body_size, value_len);
+    log_error("body size: %zu || value_request_size = %zu\n", body_size,
+              value_len);
     if (!value_request || (value_request && value_len == body_size))
     {
         return 0;
@@ -442,12 +450,12 @@ struct request *parser_request(char *raw_request, size_t size, int(*err),
         *err = REQUEST_ERR;
         return NULL;
     }
-    //req->index = index;
+    // req->index = index;
     log_error("target %s\n", req->target);
 
     if (is_not_method_allowed(req->method, err)
         || is_not_protocol_valid(req->version, err)
-        || not_contain_host(req->hash_map, err, vhost) 
+        || not_contain_host(req->hash_map, err, vhost)
         || verify_content_len_header(req->hash_map, req->body_size, err) != 0)
     {
         return req;

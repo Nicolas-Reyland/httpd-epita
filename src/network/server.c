@@ -230,6 +230,8 @@ struct server_env *setup_server(struct server_config *config)
             // close all the previously opened sockets
             for (size_t j = 0; j < i; ++j)
                 free_vhost(vhosts + j, false, false);
+            for (size_t j = i; j < config->num_vhosts; ++j)
+                destroy_vector_client(vhosts[j].clients);
 
             FREE_SET_NULL(env, events)
             return NULL;

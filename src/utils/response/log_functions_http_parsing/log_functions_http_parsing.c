@@ -26,8 +26,7 @@ void log_request(struct client *client, struct request *req, int *status_code)
 
     char buffer[50];
     strftime(buffer, 50, "%a, %d %b %Y %H:%M:%S GMT", pTime);
-    //char *client_ip = get_client_ip(vhost, index);
-    char *client_ip = client->ip_addr;
+    char *client_ip = get_client_ip(client);
     char *serv_name = hash_map_get(client->vhost->map, "server_name");
     if (req && *status_code == 200)
     {

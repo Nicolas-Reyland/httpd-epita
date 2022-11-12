@@ -26,7 +26,7 @@ struct response *init_response(void)
     struct response *response = malloc(sizeof(struct response));
     if (!response)
         return NULL;
-    response->err = 0;
+    response->err = 200;
     response->res = NULL;
     response->res_len = 0;
     return response;
@@ -67,6 +67,7 @@ struct response *create_response(int *err, struct vhost *vhost,
     // Access ressource (file)
     int open_ressource_result =
         open_ressource(path, resp, vhost, strcmp(req->method, "GET") == 0);
+    *err = resp->err;
     free(path);
     if (open_ressource_result == -1)
         return set_error_response(vhost, resp, &resp->err);
@@ -95,6 +96,7 @@ struct response *parsing_http(char *request_raw, size_t size,
         return set_error_response(vhost, resp, &err);
     }
     struct response *resp = create_response(&err, vhost, req);
+    log_error("%zu\n", err);
     log_response(vhost, req, &err, index);
     free_request(req);
     return resp;

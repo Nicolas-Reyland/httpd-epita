@@ -12,8 +12,8 @@
 #include "utils/mem.h"
 #include "utils/parsers/config/config_parser.h"
 #include "utils/state.h"
-#include "utils/vector/vector.h"
-#include "utils/vector_str/vector_str.h"
+#include "utils/vectors/vector/vector.h"
+#include "utils/vectors/vector_str/vector_str.h"
 
 static int update_vhosts(struct server_config *new_config);
 

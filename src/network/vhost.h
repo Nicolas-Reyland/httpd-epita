@@ -7,8 +7,8 @@
 
 #include "utils/hash_map/hash_map.h"
 #include "utils/parsers/config/config_parser.h"
-#include "utils/vector/vector.h"
-#include "utils/vector_str/vector_str.h"
+#include "utils/vectors/vector/vector.h"
+#include "utils/vectors/vector_str/vector_str.h"
 
 #define VHOST_VECTOR_INIT_SIZE 10
 

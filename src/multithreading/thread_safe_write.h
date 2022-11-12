@@ -4,7 +4,7 @@
 #include <sys/types.h>
 
 #include "network/vhost.h"
-#include "utils/response/response.h"
+#include "response/response.h"
 
 int thread_safe_write(struct vhost *vhost, ssize_t index,
                       struct response *resp);

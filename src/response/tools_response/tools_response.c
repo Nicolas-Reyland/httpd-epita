@@ -1,4 +1,4 @@
-#include "utils/response/tools_response/tools_response.h"
+#include "response/tools_response/tools_response.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -12,7 +12,7 @@
 
 #include "process/sig_handlers.h"
 #include "utils/logging.h"
-#include "utils/response/response.h"
+#include "response/response.h"
 
 #define READ_BUFF_SIZE 4096
 #define _XOPEN_SOURCE_EXTENDED 1

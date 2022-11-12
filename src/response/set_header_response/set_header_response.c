@@ -1,4 +1,4 @@
-#include "utils/response/set_header_response/set_header_response.h"
+#include "response/set_header_response/set_header_response.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +6,7 @@
 #include <time.h>
 
 #include "utils/logging.h"
-#include "utils/response/response.h"
+#include "response/response.h"
 
 //--------------------------------------------------------------------------------
 //------------------------------Set header

@@ -15,11 +15,11 @@
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/parsers/http/parser_request.h"
-#include "utils/response/response.h"
+#include "response/response.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
-#include "utils/vector/vector.h"
-#include "utils/vector_str/vector_str.h"
+#include "utils/vectors/vector/vector.h"
+#include "utils/vectors/vector_str/vector_str.h"
 
 #define DEBUG_MAX_DATA_SIZE 300
 

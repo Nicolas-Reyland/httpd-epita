@@ -87,7 +87,7 @@ int release_client_socket_fd(struct vhost *vhost, ssize_t index)
 
     pthread_mutex_t mutex = vhost->mutexes[index];
     int error;
-    if ((error == pthread_mutex_unlock(&mutex)) != 0)
+    if ((error = pthread_mutex_unlock(&mutex)) != 0)
     {
         log_error(
             "Unable to unlock mutex (%d) for client at index %ld in vhost %s\n",

@@ -25,6 +25,7 @@ struct vhost *init_vhosts(struct server_config *config)
         vhosts[i].map = config->vhosts[i];
         vhosts[i].client_ips =
             g_state.logging ? vector_str_init(VHOST_VECTOR_INIT_SIZE) : NULL;
+        vhosts[i].mutexes = vector_mutex_init(VHOST_VECTOR_INIT_SIZE);
     }
 
     return vhosts;

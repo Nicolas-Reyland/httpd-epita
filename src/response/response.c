@@ -6,16 +6,16 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "utils/logging.h"
 #include "response/log_functions_http_parsing/log_functions_http_parsing.h"
 #include "response/set_header_response/set_header_response.h"
 #include "response/tools_response/tools_response.h"
+#include "utils/logging.h"
 #include "utils/state.h"
 
 static struct response *init_response(void);
 
 static struct response *create_response(int *err, struct client *client,
-                                 struct request *req);
+                                        struct request *req);
 
 /*
  *   void paramater
@@ -65,9 +65,9 @@ struct response *create_response(int *err, struct client *client,
     }
 
     // Access ressource (file)
-    int open_ressource_result =
-        open_ressource(path, resp, client->vhost, strcmp(req->method, "GET") == 0);
-    *err = resp->err
+    int open_ressource_result = open_ressource(path, resp, client->vhost,
+                                               strcmp(req->method, "GET") == 0);
+    *err = resp->err;
     free(path);
     if (open_ressource_result == -1)
         return set_error_response(client->vhost, resp, &resp->err);
@@ -79,7 +79,8 @@ struct response *create_response(int *err, struct client *client,
     return resp;
 }
 
-struct response *parsing_http(char *request_raw, size_t size, struct client *client)
+struct response *parsing_http(char *request_raw, size_t size,
+                              struct client *client)
 {
     int err = 200;
     struct request *req = parser_request(request_raw, size, &err);

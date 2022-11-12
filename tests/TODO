@@ -1,0 +1,2 @@
+ * check all TODOs in the code
+ * rename config->vhosts to config->vhost_maps

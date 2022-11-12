@@ -18,7 +18,7 @@ void job_queue_destroy(struct job_queue *job_queue);
 
 size_t job_queue_size(struct job_queue *job_queue);
 
-void job_queue_push(struct job_queue *job_queue, struct job job);
+int job_queue_push(struct job_queue *job_queue, struct job job);
 
 struct job job_queue_head(struct job_queue *job_queue);
 

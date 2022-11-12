@@ -35,7 +35,7 @@ int setup_g_state(struct server_env *env)
         {
             log_error("%s: could not open log file \"%s\"\n", __func__,
                       log_file_path);
-            graceful_shutdown();
+            return -1;
         }
     }
     else
@@ -47,6 +47,13 @@ int setup_g_state(struct server_env *env)
     if (g_state.num_threads != 0 && g_state.thread_ids == NULL)
     {
         log_error("%s: Out of memory (thread_ids)\n", __func__);
+        return -1;
+    }
+    g_state.queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+    if (pthread_mutex_init(&g_state.queue_mutex, NULL) == -1)
+    {
+        free(g_state.thread_ids);
+        log_error("%s: failed to initialize mutex for job queue\n", __func__);
         return -1;
     }
 

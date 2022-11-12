@@ -19,14 +19,35 @@ struct vhost *init_vhosts(struct server_config *config)
         return NULL;
     }
     for (size_t i = 0; i < config->num_vhosts; ++i)
-    {
-        vhosts[i].socket_fd = -1;
-        vhosts[i].clients = vector_client_init(VHOST_VECTOR_INIT_SIZE);
-        // TODO: OOM check
-        vhosts[i].map = config->vhosts[i];
-    }
+        vhosts[i] = init_vhost(config->vhosts[i]);
 
     return vhosts;
+}
+
+struct vhost init_vhost(struct hash_map *map)
+{
+    // TODO: OOM checks
+
+    struct vhost vhost = {
+        .clients_mutex = PTHREAD_MUTEX_INITIALIZER,
+        .socket_fd = -1,
+        .clients = NULL,
+        .map = map,
+    };
+
+    {
+        int error;
+        if ((error = pthread_mutex_init(&vhost.clients_mutex, NULL)))
+        {
+            log_error("%s(clients mutex init); %s\n", __func__,
+                      strerror(error));
+            // TODO: fail here
+        }
+    }
+
+    vhost.clients = vector_client_init(VHOST_VECTOR_INIT_SIZE);
+
+    return vhost;
 }
 
 void free_vhost(struct vhost *vhost, bool free_map, bool free_obj)

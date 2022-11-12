@@ -15,10 +15,13 @@ struct vhost
 {
     int socket_fd;
     struct vector_client *clients;
+    pthread_mutex_t clients_mutex;
     struct hash_map *map;
 };
 
 struct vhost *init_vhosts(struct server_config *config);
+
+struct vhost init_vhost(struct hash_map *map);
 
 void free_vhost(struct vhost *vhost, bool free_map, bool free_obj);
 

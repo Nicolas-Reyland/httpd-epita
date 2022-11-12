@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "multithreading/thread_safe_write.h"
+#include "multithreading/write_response.h"
 #include "network/client.h"
 #include "network/vhost.h"
 #include "response/response.h"
@@ -28,7 +28,7 @@ static struct vhost *vhost_from_host_socket(struct server_env *env,
                                             int socket_fd);
 
 static struct client *client_from_client_socket(struct server_env *env,
-                                                int socket_fd, ssize_t *index);
+                                                int socket_fd, bool wait);
 
 void register_connection(struct server_env *env, int host_socket_fd)
 {
@@ -107,12 +107,13 @@ struct vhost *vhost_from_host_socket(struct server_env *env, int socket_fd)
     return NULL;
 }
 
-struct client *client_from_client_socket(struct server_env *env, int socket_fd)
+struct client *client_from_client_socket(struct server_env *env, int socket_fd,
+                                         bool wait)
 {
     for (size_t i = 0; i < env->config->num_vhosts; ++i)
     {
         struct client *client =
-            vector_client_find_nowait(env->vhosts[i]->clients, socket_fd);
+            vector_client_find(env->vhosts[i].clients, socket_fd, wait);
         if (client != NULL)
             return client;
     }
@@ -136,16 +137,21 @@ void process_data(struct server_env *env, int event_index, char *data,
                   strncat(memset(alloca(size + 1), 0, 1), data, size));
 
     int client_socket_fd = env->events[event_index].data.fd;
-    ssize_t index;
+    // Why wait ?
     struct client *client =
-        client_from_client_socket(env, client_socket_fd, &index);
+        client_from_client_socket(env, client_socket_fd, false);
 
     // Shoul never occur, but ok why not...
-    if (client == NULL)
+    if (client == NULL
+        && (client == client_from_client_socket(env, client_socket_fd, true)))
+    {
+        log_error("%s: could not find client associated to socket %d\n",
+                  __func__, client_socket_fd);
         return;
+    }
 
     struct response *resp = parsing_http(data, size, client);
-    thread_safe_write(vhost, index, resp);
+    write_response(client, resp);
 
     // Attention ! Does not print anything after the first 0 byte
     if (g_state.logging && resp->res_len < DEBUG_MAX_DATA_SIZE)
@@ -174,14 +180,15 @@ void close_connection(struct server_env *env, int client_socket_fd)
     // close the connection on our end, too
     close(client_socket_fd);
     // remove link between vhost and client
-    ssize_t index = -1;
     struct client *client =
-        client_from_client_socket(env, client_socket_fd, &index);
-    if (client == NULL || index == -1)
+        client_from_client_socket(env, client_socket_fd, false);
+    if (client == NULL)
     {
         log_error("%s: Could not find host associated to socket %d\n", __func__,
                   client_socket_fd);
         return;
     }
-    vector_client_remove(vhost->clients, index);
+    vector_client_remove(client);
+    // Unlock mutex
+    pthread_mutex_unlock(&client->mutex);
 }

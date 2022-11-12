@@ -52,23 +52,46 @@ void destroy_vector_client(struct vector_client *v)
 /*
  * Returns validitity status of 'index' in 'v'
  */
-bool vector_valid_index(struct vector_client *v, ssize_t index);
+bool vector_valid_index(struct vector_client *v, ssize_t index)
+{
+    return index >= 0 && index < v->size;
+}
 
 /*
- * Returns the index of the client (comparing socket file descriptors)
- * -1 if it is not found
+ * Returns the client which has the socket_fd file descriptor
+ * NULL if it is not found
+ *
+ * 'wait' refers to the mutex locking function to use (lock or trylock)
+ *
+ * Attention !!
+ * This function locks the client, returns it and does NOT unlock it
+ * That is the calling function's job !
+ *
  */
-ssize_t vector_client_find(struct vector_client *v, int socket_fd)
+struct client *vector_client_find(struct vector_client *v, int socket_fd,
+                                  bool wait)
 {
+    int (*lock_function)(pthread_mutex_t *) = NULL;
+    if (wait)
+        lock_function = pthread_mutex_lock;
+    else
+        lock_function = pthread_mutex_trylock;
+
     for (ssize_t i = 0; i < v->size; ++i)
     {
-        //
+        if ((*lock_function)(&v->data[i]->mutex) == 0)
+        {
+            struct client *client = v->data[i];
+            if (client->socket_fd == socket_fd)
+                return client;
+            pthread_mutex_unlock(&client->mutex);
+        }
     }
 
-    return -1;
+    return NULL;
 }
-/*
-** Resize the vector_client to `n` capacity.
+
+/* ** Resize the vector_client to `n` capacity.
 ** Returns `NULL` if an error occured.
 */
 struct vector_client *vector_client_resize(struct vector_client *v, size_t n)
@@ -127,17 +150,34 @@ struct vector_client *vector_client_append(struct vector_client *v,
 ** The client at index 'i' MUST be locked
 **
 */
-struct vector_client *vector_client_remove(struct vector_client *v, size_t i)
+struct vector_client *vector_client_remove(struct client *client)
 {
-    if (v == NULL || i >= v->size)
+    if (client == NULL || client->vhost == NULL)
         return NULL;
 
-    // TODO: fix this !!!
-    destroy_client(v->data[i], true);
-    struct client *last_client = get_client_at_index(v, --v->size, false);
-    v->data[i] = v->data[v->size - 1];
-    v->data[i]->index = i;
+    struct vector_client *v = client->vhost->clients;
+
+    if (v == NULL || client->index < 0 || client->index >= v->size)
+        return NULL;
+
+    // TODO: lock the vector (we are modifying values)
+
+    // Destroy the client
+    ssize_t index = client->index;
+    destroy_client(client, true);
+    v->data[index] = NULL;
+
+    // Replace
+    if (pthread_mutex_lock(&v->data[v->size - 1]->mutex) == 0)
+    {
+        // Redo the read of the last client
+        v->data[index] = v->data[v->size - 1];
+        --v->size;
+        pthread_mutex_unlock(&v->data[index]->mutex);
+    }
 
     size_t half_cap = v->capacity / 2;
-    return v->size < half_cap ? vector_client_resize(v, half_cap) : v;
+    v = v->size < half_cap ? vector_client_resize(v, half_cap) : v;
+    // pthread_mutex_unlock(&vetcor_mutex);
+    return v;
 }

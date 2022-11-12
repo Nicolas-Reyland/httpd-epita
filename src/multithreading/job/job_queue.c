@@ -15,9 +15,11 @@ struct job_queue *job_queue_init(void)
         log_error("%s: Out of memory\n", __func__);
         return NULL;
     }
+
     queue->head = NULL;
     queue->tail = NULL;
     queue->size = 0;
+
     return queue;
 }
 
@@ -38,19 +40,21 @@ size_t job_queue_size(struct job_queue *job_queue)
     return job_queue->size;
 }
 
-void job_queue_push(struct job_queue *job_queue, struct job job)
+/*
+ * Returns the size of the queue on success, -1 on error (OOM)
+ */
+int job_queue_push(struct job_queue *job_queue, struct job job)
 {
     struct queue_node *new_tail = malloc(sizeof(struct queue_node));
     if (new_tail == NULL)
-        return;
+        return -1;
+
     new_tail->job = job;
     new_tail->next = NULL;
 
     // empty queue
     if (job_queue->head == NULL)
-    {
         job_queue->head = new_tail;
-    }
     // one element in queue
     else if (job_queue->tail == NULL)
     {
@@ -63,7 +67,8 @@ void job_queue_push(struct job_queue *job_queue, struct job job)
         job_queue->tail->next = new_tail;
         job_queue->tail = new_tail;
     }
-    ++job_queue->size;
+
+    return ++job_queue->size;
 }
 
 struct job job_queue_head(struct job_queue *job_queue)
@@ -82,6 +87,7 @@ void job_queue_pop(struct job_queue *job_queue)
     }
     struct queue_node *old_head = job_queue->head;
     struct queue_node *new_head = job_queue->head->next;
+
     job_queue->head = new_head;
     --job_queue->size;
     free(old_head);
@@ -96,6 +102,7 @@ void job_queue_clear(struct job_queue *job_queue)
         head = head->next;
         free(tmp);
     }
+
     job_queue->head = NULL;
     job_queue->tail = NULL;
     job_queue->size = 0;

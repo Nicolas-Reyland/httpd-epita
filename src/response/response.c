@@ -67,6 +67,7 @@ struct response *create_response(int *err, struct client *client,
     // Access ressource (file)
     int open_ressource_result =
         open_ressource(path, resp, client->vhost, strcmp(req->method, "GET") == 0);
+    *err = resp->err
     free(path);
     if (open_ressource_result == -1)
         return set_error_response(client->vhost, resp, &resp->err);

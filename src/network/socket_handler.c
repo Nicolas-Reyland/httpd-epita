@@ -126,8 +126,11 @@ void process_data(struct server_env *env, int event_index, char *data,
         return;
     }
 
-    // Attention ! Ca ne print rien apres le premier 0
-    log_debug("Got: '''\n%s\n'''\n", strncpy(alloca(size + 1), data, size));
+    // Attention ! Does not print anything after the first 0 byte
+    if (g_state.logging)
+        // Don't want to allocate this if we aren't debugging
+        log_debug("Got: '''\n%s\n'''\n",
+                  strncat(memset(alloca(size + 1), 0, 1), data, size));
 
     int client_socket_fd = env->events[event_index].data.fd;
     ssize_t index;
@@ -142,9 +145,12 @@ void process_data(struct server_env *env, int event_index, char *data,
     struct response *resp = parsing_http(data, size, vhost, index);
     thread_safe_write(vhost, index, resp);
 
-    // Attention ! Ca ne print rien apres le premier 0
-    log_debug("Got: '''\n%s\n'''\n",
-              strncpy(alloca(resp->res_len + 1), resp->res, resp->res_len));
+    // Attention ! Does not print anything after the first 0 byte
+    if (g_state.logging)
+        // Don't want to allocate this if we aren't debugging
+        log_debug("Got: '''\n%s\n'''\n",
+                  strncat(memset(alloca(resp->res_len + 1), 0, 1), resp->res,
+                          resp->res_len));
     free_response(resp);
 }
 

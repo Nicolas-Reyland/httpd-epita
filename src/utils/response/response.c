@@ -96,7 +96,6 @@ struct response *parsing_http(char *request_raw, size_t size,
         return set_error_response(vhost, resp, &err);
     }
     struct response *resp = create_response(&err, vhost, req);
-    log_error("%zu\n", err);
     log_response(vhost, req, &err, index);
     free_request(req);
     return resp;

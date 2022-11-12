@@ -17,7 +17,7 @@ struct request
     ssize_t index;
 };
 
-struct request *parser_request(char *raw_request, size_t size, int( *err),
+struct request *parser_request(char *raw_request, size_t size, int(*err),
                                ssize_t index);
 void free_request(struct request *req);
 

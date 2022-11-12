@@ -14,7 +14,7 @@
 
 static struct response *init_response(void);
 
-static struct response *create_response(size_t *err, struct vhost *vhost,
+static struct response *create_response(int(*err), struct vhost *vhost,
                                         struct request *req);
 
 /*
@@ -36,11 +36,13 @@ void free_response(struct response *resp)
 {
     if (!resp)
         return;
+    if (resp->fd != -1)
+        close(resp->fd);
     free(resp->res);
     free(resp);
 }
 
-struct response *create_response(size_t *err, struct vhost *vhost,
+struct response *create_response(int *err, struct vhost *vhost,
                                  struct request *req)
 {
     struct response *resp = init_response();
@@ -50,38 +52,36 @@ struct response *create_response(size_t *err, struct vhost *vhost,
     set_date_gmt_header(resp); // set header date
     set_header_server_name(resp, vhost); // set header server_name
     char *path = get_path_ressource(req->target, vhost);
-    if(!path)
+    if (!path)
     {
         *err = 404;
         return set_error_response(vhost, resp, err);
     }
-    size_t size_ressource = 0;
-    char *ressource = put_ressource_resp(path, &size_ressource, vhost, err);
     if (*err != 200) // in case of error, just send a response with the header
                      // and the date
     {
         free(path);
-        free(ressource);
         return set_error_response(vhost, resp, err);
     }
-    set_header_content_length(size_ressource, resp); // set header content len
-    realloc_and_concat(resp, "\r\n", 2, false);
-    if (strcmp(req->method, "GET") == 0)
-    {
-        realloc_and_concat(resp, ressource, size_ressource,
-                           true); // put ressource into response
-        free(path);
-        return resp;
-    }
-    free(ressource);
+
+    // Access ressource (file)
+    int open_ressource_result =
+        open_ressource(path, resp, vhost, strcmp(req->method, "GET") == 0);
     free(path);
+    if (open_ressource_result == -1)
+        return set_error_response(vhost, resp, &resp->err);
+
+    // set header content len
+    set_header_content_length(resp->file_len, resp);
+    realloc_and_concat(resp, "\r\n", 2, false);
+
     return resp;
 }
 
 struct response *parsing_http(char *request_raw, size_t size,
                               struct vhost *vhost, ssize_t index)
 {
-    size_t err = 200;
+    int err = 200;
     struct request *req = parser_request(request_raw, size, &err, index);
     log_request(vhost, req, &err, index);
 

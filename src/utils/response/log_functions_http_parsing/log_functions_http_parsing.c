@@ -16,7 +16,7 @@
 
 static char *get_client_ip(struct vhost *vhost, ssize_t index);
 
-void log_request(struct vhost *vhost, struct request *req, size_t *status_code,
+void log_request(struct vhost *vhost, struct request *req, int *status_code,
                  ssize_t index)
 {
     if (!g_state.logging)
@@ -42,7 +42,7 @@ void log_request(struct vhost *vhost, struct request *req, size_t *status_code,
     }
 }
 
-void log_response(struct vhost *vhost, struct request *req, size_t *status_code,
+void log_response(struct vhost *vhost, struct request *req, int *status_code,
                   ssize_t index)
 {
     if (!g_state.logging)
@@ -58,8 +58,8 @@ void log_response(struct vhost *vhost, struct request *req, size_t *status_code,
     char *serv_name = hash_map_get(vhost->map, "server_name");
     if (req && *status_code != 400 && *status_code != 405)
     {
-        log_server("%s [%s] responding with %zu to %s for %s on '%s'\n",
-                   buffer, serv_name, *status_code, client_ip, req->method,
+        log_server("%s [%s] responding with %zu to %s for %s on '%s'\n", buffer,
+                   serv_name, *status_code, client_ip, req->method,
                    req->target);
     }
     else if (*status_code == 400)

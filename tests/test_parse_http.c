@@ -14,7 +14,7 @@ Test(ParseRequest, test_nbkeys)
                         "\r\n"
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     int nb_keys = 0;
     if (req && req->hash_map)
@@ -35,7 +35,7 @@ Test(ParseRequest, perferct_request)
         "\r\n"
         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 0);
@@ -51,7 +51,7 @@ Test(ParseRequest, test_bodyNULL)
                         "Host:\0v\0\r\n"
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     char *body = req->body;
     free_request(req);
@@ -69,7 +69,7 @@ Test(ParseRequest, test_sizebody)
                         "\r\n"
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     int size_body = 0;
     if (req)
@@ -87,7 +87,7 @@ Test(ParseRequest, test_no_CRLFCRLF)
                         "key:\0v\0\r\n"
                         "Host:\0v\0\r\n";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(req == NULL);
@@ -102,7 +102,7 @@ Test(ParseRequest, test_no_CRLFCRLF_err, 0)
                         "key:\0v\0\r\n"
                         "Host:\0v\0\r\n";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
@@ -117,7 +117,7 @@ Test(ParseRequest, test_no_host)
                         "key:\0v\0\r\n"
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
@@ -133,7 +133,7 @@ Test(ParseRequest, test_protocol_false)
                         "Host:\0v\0\r\n"
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 505);
@@ -149,7 +149,7 @@ Test(ParseRequest, test_protocol_method_false)
                         "Host:\0v\0\r\n"
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 405);
@@ -165,7 +165,7 @@ Test(ParseRequest, test_not_enough_header)
                         "Host:\0v\0\r\n"
                         "\r\n";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
@@ -175,7 +175,7 @@ Test(ParseRequest, test_invalid)
 {
     char req_string[] = "\r\n";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     cr_assert_null(req, "Expected TO BE NULL");
     free_request(req);
@@ -194,7 +194,7 @@ Test(ParseRequest, option_invalid)
         "\r\n"
         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 0;
+    int err = 0;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
@@ -211,7 +211,7 @@ Test(ParseRequest, host_multiple_colon)
                         "\r\n"
                         "this \0is t\0\0he body";
     size_t size = sizeof(req_string) - 1;
-    size_t err = 200;
+    int err = 200;
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 200);

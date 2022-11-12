@@ -144,7 +144,7 @@ void process_data(struct server_env *env, int event_index, char *data,
         return;
 
     // CODE DE CE MEC, LA
-    struct response *resp = parsing_http(data, size, vhost, index);
+    struct response *resp = parsing_http(data, size, client);
     thread_safe_write(vhost, index, resp);
 
     // Attention ! Does not print anything after the first 0 byte

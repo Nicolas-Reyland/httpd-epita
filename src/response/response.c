@@ -14,8 +14,8 @@
 
 static struct response *init_response(void);
 
-static struct response *create_response(int(*err), struct vhost *vhost,
-                                        struct request *req);
+static struct response *create_response(int *err, struct client *client,
+                                 struct request *req);
 
 /*
  *   void paramater
@@ -42,7 +42,7 @@ void free_response(struct response *resp)
     free(resp);
 }
 
-struct response *create_response(int *err, struct vhost *vhost,
+struct response *create_response(int *err, struct client *client,
                                  struct request *req)
 {
     struct response *resp = init_response();
@@ -50,26 +50,26 @@ struct response *create_response(int *err, struct vhost *vhost,
         return NULL;
     set_status_code_header(err, resp); // set header
     set_date_gmt_header(resp); // set header date
-    set_header_server_name(resp, vhost); // set header server_name
-    char *path = get_path_ressource(req->target, vhost);
+    set_header_server_name(resp, client->vhost); // set header server_name
+    char *path = get_path_ressource(req->target, client->vhost);
     if (!path)
     {
         *err = 404;
-        return set_error_response(vhost, resp, err);
+        return set_error_response(client->vhost, resp, err);
     }
     if (*err != 200) // in case of error, just send a response with the header
                      // and the date
     {
         free(path);
-        return set_error_response(vhost, resp, err);
+        return set_error_response(client->vhost, resp, err);
     }
 
     // Access ressource (file)
     int open_ressource_result =
-        open_ressource(path, resp, vhost, strcmp(req->method, "GET") == 0);
+        open_ressource(path, resp, client->vhost, strcmp(req->method, "GET") == 0);
     free(path);
     if (open_ressource_result == -1)
-        return set_error_response(vhost, resp, &resp->err);
+        return set_error_response(client->vhost, resp, &resp->err);
 
     // set header content len
     set_header_content_length(resp->file_len, resp);
@@ -78,24 +78,23 @@ struct response *create_response(int *err, struct vhost *vhost,
     return resp;
 }
 
-struct response *parsing_http(char *request_raw, size_t size,
-                              struct vhost *vhost, ssize_t index)
+struct response *parsing_http(char *request_raw, size_t size, struct client *client)
 {
     int err = 200;
-    struct request *req = parser_request(request_raw, size, &err, index);
-    log_request(vhost, req, &err, index);
+    struct request *req = parser_request(request_raw, size, &err);
+    log_request(client, req, &err);
 
     if (err != 200)
     {
-        log_response(vhost, req, &err, index);
+        log_response(client, req, &err);
         struct response *resp = init_response();
         if (!resp)
             return NULL;
         free_request(req);
-        return set_error_response(vhost, resp, &err);
+        return set_error_response(client->vhost, resp, &err);
     }
-    struct response *resp = create_response(&err, vhost, req);
-    log_response(vhost, req, &err, index);
+    struct response *resp = create_response(&err, client, req);
+    log_response(client, req, &err);
     free_request(req);
     return resp;
 }

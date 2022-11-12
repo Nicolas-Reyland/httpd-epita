@@ -8,6 +8,9 @@
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/state.h"
+#include "utils/vectors/vector/vector.h"
+#include "utils/vectors/vector_mutex/vector_mutex.h"
+#include "utils/vectors/vector_str/vector_str.h"
 
 struct vhost *init_vhosts(struct server_config *config)
 {
@@ -46,6 +49,7 @@ void free_vhost(struct vhost *vhost, bool free_config, bool free_obj)
     // free buffers for fds and ips
     free_vector(vhost->clients);
     free_vector_str(vhost->client_ips);
+    free_vector_mutex(vhost->mutexes);
 
     // additional frees
     if (free_config)

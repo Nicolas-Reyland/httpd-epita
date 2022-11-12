@@ -8,6 +8,7 @@
 #include "utils/hash_map/hash_map.h"
 #include "utils/parsers/config/config_parser.h"
 #include "utils/vectors/vector/vector.h"
+#include "utils/vectors/vector_mutex/vector_mutex.h"
 #include "utils/vectors/vector_str/vector_str.h"
 
 #define VHOST_VECTOR_INIT_SIZE 10
@@ -18,7 +19,7 @@ struct vhost
     struct vector *clients;
     struct hash_map *map;
     struct vector_str *client_ips;
-    pthread_mutex_t *mutexes;
+    struct vector_mutex *mutexes;
 };
 
 struct vhost *init_vhosts(struct server_config *config);

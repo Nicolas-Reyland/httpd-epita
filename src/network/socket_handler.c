@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <netdb.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,11 +12,11 @@
 
 #include "multithreading/thread_safe_write.h"
 #include "network/vhost.h"
+#include "response/response.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/parsers/http/parser_request.h"
-#include "response/response.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
 #include "utils/vectors/vector/vector.h"
@@ -91,9 +92,18 @@ void register_connection(struct server_env *env, int host_socket_fd)
 
         // register client socket fd to vhost
         vector_append(vhost->clients, client_socket_fd);
+        pthread_mutex_t mutex;
         // register ip address for logging (if needed)
         if (g_state.logging)
             vector_str_append(vhost->client_ips, strdup(host_buffer));
+        // register mutex of client socket
+        int mutex_init_error = pthread_mutex_init(&mutex, NULL);
+        vector_mutex_append(vhost->mutexes, mutex);
+        if (mutex_init_error)
+        {
+            log_error("%s: %s\n", __func__, strerror(mutex_init_error));
+            close_connection(env, client_socket_fd);
+        }
     }
 }
 

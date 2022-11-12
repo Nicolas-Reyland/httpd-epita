@@ -114,6 +114,7 @@ int open_ressource(char *path, struct response *resp, struct vhost *vhost,
         return -1;
     }
 
+    resp->file_len = 0;
     if (!open_file)
         return 0;
 

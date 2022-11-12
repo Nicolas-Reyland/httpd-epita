@@ -108,6 +108,7 @@ _Noreturn void run_server(struct server_env *env)
     {
         int num_events =
             epoll_wait(env->epoll_fd, env->events, EPOLL_MAXEVENTS, -1);
+        log_debug("%s: epoll notified on %d events\n", __func__, num_events);
         for (int i = 0; i < num_events; ++i)
         {
             ssize_t index = -1;
@@ -129,6 +130,8 @@ _Noreturn void run_server(struct server_env *env)
             // File not available for reading, so just skipping it
             if (!(env->events[i].events & EPOLLIN))
             {
+                log_debug("%s: epoll made an unnecessary notification\n",
+                          __func__);
                 // maybe log to see why we were notified ?
                 continue;
             }

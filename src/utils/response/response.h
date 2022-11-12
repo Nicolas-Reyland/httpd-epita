@@ -10,8 +10,10 @@
 struct response
 {
     char *res;
-    int err;
     size_t res_len;
+    int fd;
+    size_t file_len;
+    int err;
 };
 
 struct response *parsing_http(char *request_raw, size_t size,

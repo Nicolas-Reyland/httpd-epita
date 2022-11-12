@@ -21,6 +21,8 @@
 #include "utils/vector/vector.h"
 #include "utils/vector_str/vector_str.h"
 
+#define DEBUG_MAX_DATA_SIZE 300
+
 static struct vhost *vhost_from_host_socket(struct server_env *env,
                                             int socket_fd);
 
@@ -127,7 +129,7 @@ void process_data(struct server_env *env, int event_index, char *data,
     }
 
     // Attention ! Does not print anything after the first 0 byte
-    if (g_state.logging)
+    if (g_state.logging && size < DEBUG_MAX_DATA_SIZE)
         // Don't want to allocate this if we aren't debugging
         log_debug("Got: '''\n%s\n'''\n",
                   strncat(memset(alloca(size + 1), 0, 1), data, size));
@@ -146,7 +148,7 @@ void process_data(struct server_env *env, int event_index, char *data,
     thread_safe_write(vhost, index, resp);
 
     // Attention ! Does not print anything after the first 0 byte
-    if (g_state.logging)
+    if (g_state.logging && resp->res_len < DEBUG_MAX_DATA_SIZE)
         // Don't want to allocate this if we aren't debugging
         log_debug("Got: '''\n%s\n'''\n",
                   strncat(memset(alloca(resp->res_len + 1), 0, 1), resp->res,

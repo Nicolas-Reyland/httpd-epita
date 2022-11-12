@@ -7,8 +7,8 @@
 
 char *get_path_ressource(char *target, struct vhost *vhost);
 
-char *put_ressource_resp(char *path, size_t *size, struct vhost *vhost,
-                         size_t *err);
+int open_ressource(char *path, struct response *resp, struct vhost *vhost,
+                   int open_file);
 
 void realloc_and_concat(struct response *resp, char *to_concat,
                         size_t to_concat_len, bool free_obj);

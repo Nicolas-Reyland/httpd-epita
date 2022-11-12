@@ -1,7 +1,8 @@
 #include "utils/response/tools_response/tools_response.h"
 
+#include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -49,7 +50,7 @@ int is_path_traversal_attack(char *path, struct vhost *vhost)
 char *get_path_ressource(char *target, struct vhost *vhost)
 {
     char *root_dir = hash_map_get(vhost->map, "root_dir");
-    if(!root_dir)
+    if (!root_dir)
     {
         return NULL;
     }
@@ -83,50 +84,58 @@ char *get_path_ressource(char *target, struct vhost *vhost)
 
 /*
  *   path = the full path of the ressource
+ *   resp = response to a http request
  *   vhost = the structure response w/ headers
- *   Function: concatain the response with the contain of the file given in
- * parameter and return the response
+ *
+ * Returns -1 on error. 0 on success.
+ *
  */
-char *put_ressource_resp(char *path, size_t *size, struct vhost *vhost,
-                         size_t *err)
+int open_ressource(char *path, struct response *resp, struct vhost *vhost,
+                   int open_file)
 {
     // if we can open the file:
-    FILE *file = fopen(path, "r");
     if (access(path, R_OK) == -1)
     {
         if (access(path, F_OK) == -1)
         {
-            *err = 404;
-            return NULL;
+            resp->err = 404;
+            return -1;
         }
         else
         {
-            *err = 403;
-            return NULL;
+            resp->err = 403;
+            return -1;
         }
     }
 
     if (is_path_traversal_attack(path, vhost) == 1)
     {
-        *err = 403;
-        return NULL;
+        resp->err = 403;
+        return -1;
     }
 
-    char buff[READ_BUFF_SIZE];
-    //--------puts /r/n one more time between headers and ressources
-    // realloc_and_concat(resp, "\r\n", false);
-    //--------
-    char *res = NULL;
-    ssize_t nb_read = fread(buff, 1, READ_BUFF_SIZE, file);
-    while (nb_read > 0)
+    resp->file_len = 0;
+    if (!open_file)
+        return 0;
+
+    if ((resp->fd = open(path, O_RDONLY)) == -1)
     {
-        res = realloc(res, *size + nb_read);
-        res = memcpy(res + *size, buff, nb_read);
-        *size += nb_read;
-        nb_read = fread(buff, 1, READ_BUFF_SIZE, file);
+        log_error("%s: %s", __func__, strerror(errno));
+        resp->err = 403;
+        return -1;
     }
-    fclose(file);
-    return res;
+
+    // retrieve fiel size
+    struct stat statbuf;
+    if (fstat(resp->fd, &statbuf) == -1)
+    {
+        log_error("%s: %s", __func__, strerror(errno));
+        resp->err = 403;
+        return -1;
+    }
+
+    resp->file_len = statbuf.st_size;
+    return 0;
 }
 
 /*

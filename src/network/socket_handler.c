@@ -9,12 +9,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "multithreading/thread_safe_write.h"
 #include "network/vhost.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/parsers/http/parser_request.h"
-#include "utils/reponse/reponse.h"
+#include "utils/response/response.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
 #include "utils/vector/vector.h"
@@ -125,29 +126,26 @@ void process_data(struct server_env *env, int event_index, char *data,
         return;
     }
 
-    log_message(LOG_STDOUT | LOG_DEBUG, "Got: '''\n");
-    for (size_t i = 0; i < size; ++i)
-        log_message(LOG_STDOUT | LOG_DEBUG, "%c", data[i]);
-    log_message(LOG_STDOUT | LOG_DEBUG, "\n'''\n");
+    // Attention ! Ca ne print rien apres le premier 0
+    log_debug("Got: '''\n%s\n'''\n", strncpy(alloca(size + 1), data, size));
 
     int client_socket_fd = env->events[event_index].data.fd;
     ssize_t index;
     struct vhost *vhost =
         vhost_from_client_socket(env, client_socket_fd, &index);
 
+    // Shoul never occur, but ok why not...
+    if (index == -1)
+        return;
+
     // CODE DE CE MEC, LA
     struct response *resp = parsing_http(data, size, vhost, index);
-    write(client_socket_fd, resp->res, resp->res_len);
+    thread_safe_write(vhost, index, resp);
 
-    log_message(LOG_STDOUT | LOG_DEBUG, "Got: '''\n");
-    for (size_t i = 0; i < resp->res_len; ++i)
-        log_message(LOG_STDOUT | LOG_DEBUG, "%c", resp->res[i]);
-    log_message(LOG_STDOUT | LOG_DEBUG, "\n'''\n");
+    // Attention ! Ca ne print rien apres le premier 0
+    log_debug("Got: '''\n%s\n'''\n",
+              strncpy(alloca(resp->res_len + 1), resp->res, resp->res_len));
     free_response(resp);
-    return;
-
-    // CODE PROPRE REPREND ICI
-    // safe_write(client_socket_fd, reply, reply_size);
 }
 
 bool incoming_connection(struct server_env *env, int client_socket_fd)

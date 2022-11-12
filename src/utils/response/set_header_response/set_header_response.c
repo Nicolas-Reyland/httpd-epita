@@ -1,11 +1,11 @@
-#include "utils/reponse/set_header_response/set_header_response.h"
+#include "utils/response/set_header_response/set_header_response.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "utils/reponse/reponse.h"
+#include "utils/response/response.h"
 
 //--------------------------------------------------------------------------------
 //------------------------------Set header

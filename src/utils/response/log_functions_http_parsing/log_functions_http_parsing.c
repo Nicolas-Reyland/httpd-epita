@@ -1,4 +1,4 @@
-#include "utils/reponse/log_functions_http_parsing/log_functions_http_parsing.h"
+#include "utils/response/log_functions_http_parsing/log_functions_http_parsing.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +6,7 @@
 #include <time.h>
 
 #include "utils/logging.h"
-#include "utils/reponse/reponse.h"
+#include "utils/response/response.h"
 #include "utils/state.h"
 
 //--------------------------------------------------------------------------------

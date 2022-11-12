@@ -6,7 +6,7 @@
 
 #include "network/vhost.h"
 #include "utils/parsers/http/parser_request.h"
-#include "utils/reponse/reponse.h"
+#include "utils/response/response.h"
 
 void log_request(struct vhost *vhost, struct request *req, size_t *status_code,
                  ssize_t index);

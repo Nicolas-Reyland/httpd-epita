@@ -1,4 +1,4 @@
-#include "utils/reponse/tools_response/tools_response.h"
+#include "utils/response/tools_response/tools_response.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -11,7 +11,7 @@
 
 #include "process/sig_handlers.h"
 #include "utils/logging.h"
-#include "utils/reponse/reponse.h"
+#include "utils/response/response.h"
 
 #define READ_BUFF_SIZE 4096
 #define _XOPEN_SOURCE_EXTENDED 1

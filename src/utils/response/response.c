@@ -1,4 +1,4 @@
-#include "utils/reponse/reponse.h"
+#include "utils/response/response.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,9 +7,9 @@
 #include <unistd.h>
 
 #include "utils/logging.h"
-#include "utils/reponse/log_functions_http_parsing/log_functions_http_parsing.h"
-#include "utils/reponse/set_header_response/set_header_response.h"
-#include "utils/reponse/tools_response/tools_response.h"
+#include "utils/response/log_functions_http_parsing/log_functions_http_parsing.h"
+#include "utils/response/set_header_response/set_header_response.h"
+#include "utils/response/tools_response/tools_response.h"
 #include "utils/state.h"
 
 static struct response *init_response(void);

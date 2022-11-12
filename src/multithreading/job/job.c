@@ -8,6 +8,8 @@
 
 void add_job_to_queue(struct job job)
 {
+    log_debug("Adding job of type %d to queue\n", job.type);
+
     {
         int error;
         if ((error = pthread_mutex_lock(&g_state.queue_mutex)))
@@ -18,7 +20,8 @@ void add_job_to_queue(struct job job)
     }
 
     if (job_queue_push(g_state.job_queue, job) == -1)
-        log_error("%s: failed to push job to queue %d\n", __func__, job.type);
+        log_error("%s: failed to push job of type %d to queue\n", __func__,
+                  job.type);
 
     {
         int error;

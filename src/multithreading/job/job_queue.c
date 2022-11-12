@@ -25,6 +25,9 @@ struct job_queue *job_queue_init(void)
 
 void job_queue_destroy(struct job_queue *job_queue)
 {
+    if (job_queue == NULL)
+        return;
+
     struct queue_node *head = job_queue->head;
     while (head != NULL)
     {
@@ -45,6 +48,9 @@ size_t job_queue_size(struct job_queue *job_queue)
  */
 int job_queue_push(struct job_queue *job_queue, struct job job)
 {
+    if (job_queue == NULL)
+        return -1;
+
     struct queue_node *new_tail = malloc(sizeof(struct queue_node));
     if (new_tail == NULL)
         return -1;

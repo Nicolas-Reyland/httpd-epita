@@ -46,10 +46,18 @@ int setup_g_state(struct server_env *env)
     g_state.thread_ids = calloc(g_state.num_threads, sizeof(pthread_t));
     if (g_state.num_threads != 0 && g_state.thread_ids == NULL)
     {
+        g_state.num_threads = 0;
         log_error("%s: Out of memory (thread_ids)\n", __func__);
         return -1;
     }
-    g_state.queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+    g_state.job_queue = job_queue_init();
+    if (g_state.job_queue == NULL)
+    {
+        free(g_state.thread_ids);
+        return -1;
+    }
+
     if (pthread_mutex_init(&g_state.queue_mutex, NULL) == -1)
     {
         free(g_state.thread_ids);

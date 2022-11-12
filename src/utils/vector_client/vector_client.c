@@ -50,14 +50,6 @@ void destroy_vector_client(struct vector_client *v)
 }
 
 /*
- * Returns validitity status of 'index' in 'v'
- */
-bool vector_valid_index(struct vector_client *v, ssize_t index)
-{
-    return index >= 0 && index < v->size;
-}
-
-/*
  * Returns the client which has the socket_fd file descriptor
  * NULL if it is not found
  *
@@ -77,7 +69,7 @@ struct client *vector_client_find(struct vector_client *v, int socket_fd,
     else
         lock_function = pthread_mutex_trylock;
 
-    for (ssize_t i = 0; i < v->size; ++i)
+    for (size_t i = 0; i < v->size; ++i)
     {
         if ((*lock_function)(&v->data[i]->mutex) == 0)
         {
@@ -114,7 +106,8 @@ struct vector_client *vector_client_resize(struct vector_client *v, size_t n)
  */
 bool vector_client_valid_index(struct vector_client *v, ssize_t index)
 {
-    return v == NULL ? false : index >= 0 && index < v->size;
+    size_t index_t = index;
+    return v == NULL ? false : index >= 0 && index_t < v->size;
 }
 
 /*
@@ -157,13 +150,13 @@ struct vector_client *vector_client_remove(struct client *client)
 
     struct vector_client *v = client->vhost->clients;
 
-    if (v == NULL || client->index < 0 || client->index >= v->size)
+    ssize_t index = client->index;
+    if (v == NULL || !vector_client_valid_index(v, index))
         return NULL;
 
     // TODO: lock the vector (we are modifying values)
 
     // Destroy the client
-    ssize_t index = client->index;
     destroy_client(client, true);
     v->data[index] = NULL;
 

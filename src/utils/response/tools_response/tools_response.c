@@ -1,5 +1,6 @@
 #include "utils/response/tools_response/tools_response.h"
 
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +50,7 @@ int is_path_traversal_attack(char *path, struct vhost *vhost)
 char *get_path_ressource(char *target, struct vhost *vhost)
 {
     char *root_dir = hash_map_get(vhost->map, "root_dir");
-    if(!root_dir)
+    if (!root_dir)
     {
         return NULL;
     }
@@ -91,7 +92,6 @@ char *put_ressource_resp(char *path, size_t *size, struct vhost *vhost,
                          size_t *err)
 {
     // if we can open the file:
-    FILE *file = fopen(path, "r");
     if (access(path, R_OK) == -1)
     {
         if (access(path, F_OK) == -1)
@@ -112,19 +112,39 @@ char *put_ressource_resp(char *path, size_t *size, struct vhost *vhost,
         return NULL;
     }
 
+    FILE *file = fopen(path, "r");
     char buff[READ_BUFF_SIZE];
     //--------puts /r/n one more time between headers and ressources
     // realloc_and_concat(resp, "\r\n", false);
     //--------
     char *res = NULL;
-    ssize_t nb_read = fread(buff, 1, READ_BUFF_SIZE, file);
-    while (nb_read > 0)
+    size_t nb_read;
+    while ((nb_read = fread(buff, 1, READ_BUFF_SIZE, file)) != 0)
     {
-        res = realloc(res, *size + nb_read);
-        res = memcpy(res + *size, buff, nb_read);
+        void *res_tmp = realloc(res, *size + nb_read);
+        if (res_tmp == NULL)
+        {
+            free(res);
+            *size = 0;
+            fclose(file);
+            *err = 403;
+            log_error("%s: %s\n", __func__, strerror(errno));
+            return NULL;
+        }
+        res = res_tmp;
+        memcpy(res + *size, buff, nb_read);
         *size += nb_read;
-        nb_read = fread(buff, 1, READ_BUFF_SIZE, file);
     }
+    if (ferror(file))
+    {
+        log_error("%s: an error occured while reading \"%s\"\n", __func__,
+                  path);
+        *size = 0;
+        free(res);
+        *err = 403;
+        return NULL;
+    }
+
     fclose(file);
     return res;
 }

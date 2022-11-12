@@ -1,6 +1,7 @@
 #ifndef VHOST_H
 #define VHOST_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -17,6 +18,7 @@ struct vhost
     struct vector *clients;
     struct hash_map *map;
     struct vector_str *client_ips;
+    pthread_mutex_t *mutexes;
 };
 
 struct vhost *init_vhosts(struct server_config *config);

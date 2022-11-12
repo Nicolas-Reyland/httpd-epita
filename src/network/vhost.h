@@ -25,4 +25,4 @@ struct vhost init_vhost(struct hash_map *map);
 
 void free_vhost(struct vhost *vhost, bool free_map, bool free_obj);
 
-#endif /* VHOST_H */
+#endif /* !VHOST_H */

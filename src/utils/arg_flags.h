@@ -11,4 +11,4 @@
 
 int daemon_flag_from_string(char *arg);
 
-#endif /* ARG_FLAGS_H */
+#endif /* !ARG_FLAGS_H */

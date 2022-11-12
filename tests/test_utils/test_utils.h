@@ -26,4 +26,4 @@
 #define CR_ASSERT_STR_EQ_EXPANDED(Val1, Val2)                                  \
     cr_assert_str_eq((Val1), (Val2), #Val2 ": " EXP_GOT_STR, (Val1), (Val2))
 
-#endif /* TEST_UTILS_H */
+#endif /* !TEST_UTILS_H */

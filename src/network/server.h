@@ -12,4 +12,4 @@ _Noreturn void run_server(struct server_env *env);
 
 int setup_socket(int epoll_fd, char *ip_addr, char *port);
 
-#endif /* SERVER_H */
+#endif /* !SERVER_H */

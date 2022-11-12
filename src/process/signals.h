@@ -3,4 +3,4 @@
 
 int setup_signal_handlers(void);
 
-#endif /* SIGNALS_H */
+#endif /* !SIGNALS_H */

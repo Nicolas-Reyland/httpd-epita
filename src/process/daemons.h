@@ -12,4 +12,4 @@
 
 _Noreturn void handle_daemon(struct server_config *config, int flags);
 
-#endif /* DAEMONS_H */
+#endif /* !DAEMONS_H */

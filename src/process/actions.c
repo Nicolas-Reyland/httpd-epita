@@ -30,7 +30,7 @@ _Noreturn void daemon_action_stop(char *pid_file, int process_flags)
 
     if (process_flags & DAEMONS_NO_PIDFILE || process_flags & DAEMONS_PROC_DEAD)
     {
-        log_message(LOG_STDERR | LOG_WARN,
+        log_warn(
                     "Pid file %s does not exist, or is not readable\n",
                     pid_file);
         exit(EXIT_SUCCESS);

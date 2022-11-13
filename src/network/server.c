@@ -54,7 +54,7 @@ _Noreturn void start_all(struct server_config *config, char *pid_file)
         free_server_config(config, true);
         exit(EXIT_FAILURE);
     }
-    log_message(LOG_STDOUT | LOG_INFO, "Setup done. Starting server.\n");
+    log_info( "Setup done. Starting server.\n");
 
     // Setup all the global variables
     if (setup_g_state(env) == -1)
@@ -114,7 +114,7 @@ _Noreturn void run_server(struct server_env *env)
             int socket_fd = env->events[i].data.fd;
             if (env->events[i].events & (EPOLLHUP | EPOLLERR))
             {
-                // logging (errno ?)
+                // use errno in logging ?
                 log_error("Error occured in epoll: %d\n", env->events[i]);
                 close_connection(socket_fd);
                 continue;
@@ -196,7 +196,7 @@ struct server_env *setup_server(struct server_config *config)
     {
         char *vhost_ip_addr = hash_map_get(config->vhosts[i], "ip");
         char *vhost_port = hash_map_get(config->vhosts[i], "port");
-        log_message(LOG_STDOUT | LOG_DEBUG, "Adding vhost @ %s:%s\n",
+        log_debug( "Adding vhost @ %s:%s\n",
                     vhost_ip_addr, vhost_port);
         vhosts[i].socket_fd = setup_socket(epoll_fd, vhost_ip_addr, vhost_port);
 
@@ -239,7 +239,7 @@ int setup_socket(int epoll_fd, char *ip_addr, char *port)
     int socket_fd = create_socket(ip_addr, port);
     if (socket_fd == -1)
     {
-        // TODO: logging (could not create socket or smthin)
+        log_error("%s: failed to create vhost socket\n", __func__);
         return -1;
     }
 
@@ -253,14 +253,14 @@ int setup_socket(int epoll_fd, char *ip_addr, char *port)
     if (!set_socket_nonblocking_mode(socket_fd))
     {
         close(socket_fd);
-        // TODO: logging (could not set socket to non-blocking mode)
+        log_error("%s: failed to set socket to nonblocking mode\n", __func__);
         return -1;
     }
 
     if (listen(socket_fd, SOMAXCONN) == -1)
     {
         close(socket_fd);
-        // TODO: logging (errno)
+        log_error("%s(listen): %s\n", __func__, strerror(errno));
         return -1;
     }
 
@@ -277,8 +277,8 @@ int setup_socket(int epoll_fd, char *ip_addr, char *port)
     event.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
     {
+        log_error("%s(epoll_ctl ADD %s): %s\n", __func__, socket_fd, strerror(errno));
         close(socket_fd);
-        // TODO: logging (errno?)
         return -1;
     }
 
@@ -297,8 +297,7 @@ int create_socket(char *ip_addr, char *port)
     struct sockaddr_in addr_in = { 0 };
     if (!inet_aton(ip_addr, &addr_in.sin_addr))
     {
-        // logging (invalid ip adddress)
-        log_error("Could not retrieve ip address from string '%s'\n", ip_addr);
+        log_error("%s: could not retrieve ip address from string '%s'\n", __func__, ip_addr);
         return -1;
     }
     addr_in.sin_family = AF_INET;
@@ -348,10 +347,9 @@ int create_socket(char *ip_addr, char *port)
 
     if (addr == NULL)
     {
-        log_error("No suitable address found\n");
+        log_error("%s: no suitable address found\n", __func__);
         if (errno != 0)
-            warn(__func__);
-        // logging (no suitable address)
+            log_error("%s: %s\n", __func__, strerror(errno));
         return -1;
     }
 

@@ -61,7 +61,7 @@ bool set_socket_nonblocking_mode(int socket_fd)
     // First, retrieve the flags associated to the socket file descriptor
     if ((flags = fcntl(socket_fd, F_GETFL, 0)) == -1)
     {
-        // TODO: looging (could not retrieve flags from socket fd)
+        log_error("%s: could not retrieve flags from socket fd\n");
         return false;
     }
 
@@ -69,7 +69,7 @@ bool set_socket_nonblocking_mode(int socket_fd)
     flags |= O_NONBLOCK;
     if (fcntl(socket_fd, F_SETFL, flags) == -1)
     {
-        // TODO: logging (could not set flag to non-blocking)
+        log_error("%s(fcntl set nonblocking flag): %s", __func__, strerror(errno));
         return false;
     }
 

@@ -33,7 +33,7 @@ void signal_handler(int signum)
 
 _Noreturn void graceful_shutdown(void)
 {
-    log_warn("\nGracefully killing self...\n");
+    log_warn("Gracefully killing self...\n\n");
 
     free_server_env(g_state.env, true, true);
     if (g_state.log_file_stream != NULL && g_state.log_file_stream != stdout)

@@ -172,6 +172,7 @@ struct vector_client *vector_client_remove(struct client *client)
     {
         // Redo the read of the last client
         v->data[index] = v->data[v->size - 1];
+        v->data[index]->index = index;
         --v->size;
         pthread_mutex_unlock(&v->data[index]->mutex);
     }

@@ -5,6 +5,8 @@
 
 #include "utils/state.h"
 
+static void log_message(int flags, const char *format, ...);
+
 static void vlog_message(int flags, const char *format, va_list args);
 
 void log_debug(const char *format, ...)

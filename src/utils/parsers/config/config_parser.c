@@ -159,7 +159,7 @@ struct server_config *fill_server_config(struct server_config *config)
 
     if (hash_map_get(config->global, "pid_file") == NULL)
     {
-        log_message(LOG_STDERR | LOG_EPITA,
+        log_server(
                     "%s: missing mandatory key in global: 'pid_file'\n",
                     config->filename);
         free_server_config(config, true);
@@ -177,7 +177,7 @@ struct server_config *fill_server_config(struct server_config *config)
             char *key = mandatory_keys[j];
             if (hash_map_get(vhost_map, key) == NULL)
             {
-                log_message(LOG_STDERR | LOG_EPITA,
+                log_server(
                             "%s: missing mandatory key in vhost[%zu]: '%s'\n",
                             config->filename, i, key);
                 free_server_config(config, true);

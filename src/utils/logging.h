@@ -26,8 +26,6 @@ void log_warn(const char *format, ...);
 
 void log_error(const char *format, ...);
 
-void log_message(int flags, const char *format, ...);
-
 void log_server(const char *format, ...);
 
 #endif /* !LOGGING_H */

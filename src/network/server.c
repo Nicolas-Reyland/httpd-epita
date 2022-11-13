@@ -111,7 +111,7 @@ _Noreturn void run_server(struct server_env *env)
     {
         int num_events =
             epoll_wait(env->epoll_fd, env->events, EPOLL_MAXEVENTS, -1);
-        log_debug("%s: epoll notified on %d events\n", __func__, num_events);
+        log_debug("%s: epoll notified on %d event(s)\n", __func__, num_events);
         for (int i = 0; i < num_events; ++i)
         {
             ssize_t index = -1;

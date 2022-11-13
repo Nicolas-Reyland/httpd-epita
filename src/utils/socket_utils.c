@@ -41,7 +41,7 @@ char *read_from_connection(int socket_fd, size_t *data_len, bool *alive)
     if (num_read == -1 && errno != EAGAIN)
     {
         free(buffer);
-        log_error("Error occurred in data reading\n");
+        log_error("%s(read data): %s\n", __func__, strerror(errno));
         warn(__func__);
         *data_len = 1;
         return NULL;

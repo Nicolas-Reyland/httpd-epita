@@ -11,7 +11,12 @@
 
 void add_job_to_queue(struct job job)
 {
-    log_debug("Adding job of type %d to queue\n", job.type);
+    static size_t job_uid = 1;
+    job.uid = job_uid++;
+
+    log_debug("Adding job {type = %d, socket_fd = %d, index = %zd, uid = %zu} "
+              "to queue\n",
+              job.type, job.socket_fd, job.index, job.uid);
 
     {
         int error;
@@ -22,12 +27,19 @@ void add_job_to_queue(struct job job)
         }
     }
 
+    if (job.type == JOB_IDLE)
+        log_warn("%s: pushing idle job (uid = %zu) to queue\n", __func__,
+                 job.uid);
+
     if (job_queue_push(g_state.job_queue, job) == -1)
         log_error("%s: failed to push job of type %d to queue\n", __func__,
                   job.type);
 
-    log_debug("%s: there are %zu jobs waiting in queue\n", __func__,
-              g_state.job_queue->size);
+    if (g_state.job_queue->size == 1)
+        log_debug("%s: there is 1 job waiting in queue\n", __func__);
+    else
+        log_debug("%s: there are %zu jobs waiting in queue\n", __func__,
+                  g_state.job_queue->size);
 
     {
         int error;
@@ -47,6 +59,8 @@ static void execute_close_job(struct job job);
 
 void execute_job(struct job job)
 {
+    log_info("Executing job (uid = %zu)\n", job.uid);
+
     switch (job.type)
     {
     case JOB_ACCEPT:
@@ -69,20 +83,33 @@ void execute_job(struct job job)
 
 void execute_accept_job(struct job job)
 {
-    log_debug("Executing access job\n");
+    log_debug("Executing access job (uid = %zu)\n", job.uid);
     register_connection(job.socket_fd);
 }
 
+static int lock_vector_containing_locked_client(struct client *client);
+
 void execute_process_job(struct job job)
 {
-    log_debug("Executing process job\n");
+    log_debug("Executing process job (uid = %zu)\n", job.uid);
 
-    struct client *client = client_from_client_socket(job.socket_fd, false);
+    // should wait for vhost clients
+    struct client *client = client_from_client_socket(job.socket_fd, true);
     if (client == NULL)
     {
         log_error(
             "[%d] %s(lock client): could not find a client associated to %d\n",
             pthread_self(), __func__, job.socket_fd);
+        return;
+    }
+
+    // lock vector containing client (which is locked)
+    if (lock_vector_containing_locked_client(client) == -1)
+    {
+        log_error("[%d] %s(lock vector client): failed to lock vector "
+                  "associated to %d\n",
+                  pthread_self(), __func__, job.socket_fd);
+        release_client(client);
         return;
     }
 
@@ -92,31 +119,53 @@ void execute_process_job(struct job job)
     char *data = read_from_connection(client->socket_fd, &data_len, &alive);
     if (!alive)
     {
+        log_debug("Closing dead connection while processing job (uid = %zu)\n",
+                  job.uid);
         // close the connection now : why bother adding the task to another
         // thread ? the client is already locked, so let's do it now
-        close_connection(client);
+
+        if (lock_vector_containing_locked_client(client) == -1)
+        {
+            log_warn("[%d] %s: locking vetor failed. manually adding close job "
+                     "to queue\n",
+                     pthread_self(), __func__);
+            struct job close_job = {
+                .type = JOB_CLOSE,
+                .socket_fd = client->socket_fd,
+                .index = client->index,
+            };
+            add_job_to_queue(close_job);
+        }
+        else
+            close_connection(client);
     }
     else
     {
-        // when threading, add (i, data, size) to queue instead of
-        // doing it now, in the main loop
         process_data(client, data, data_len);
         free(data);
     }
+
     // unlock client and return
+    struct vhost *vhost = client->vhost;
+    release_client(client);
+
+    log_debug("[%d] Finished process job (uid = %zu)\n", pthread_self(),
+              job.uid);
+
+    // unlock vector
     {
         int error;
-        if ((error = pthread_mutex_unlock(&client->mutex)))
+        if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
         {
-            log_error("[%d] %s(unlock client): %s\n", pthread_self(), __func__,
-                      strerror(error));
+            log_error("[%d] %s(unlock clients vector, ignored): %s\n",
+                      pthread_self(), __func__, strerror(error));
         }
     }
 }
 
 void execute_close_job(struct job job)
 {
-    log_debug("Executing close job\n");
+    log_debug("Executing close job (uid = %zu)\n", job.uid);
 
     // lock client
     struct client *client = client_from_client_socket(job.socket_fd, false);
@@ -128,16 +177,54 @@ void execute_close_job(struct job job)
         return;
     }
 
+    // lock vector containing client (which is locked)
+    if (lock_vector_containing_locked_client(client) == -1)
+    {
+        log_error("[%d] %s(lock vector client): failed to lock vector "
+                  "associated to %d\n",
+                  pthread_self(), __func__, job.socket_fd);
+        release_client(client);
+        return;
+    }
+
     // work
+    struct vhost *vhost = client->vhost;
     close_connection(client);
 
-    // unlock client and return
+    // unlock vector (NOT the client, since it has been removed)
     {
         int error;
-        if ((error = pthread_mutex_unlock(&client->mutex)))
+        if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
         {
-            log_error("[%d] %s(unlock client): %s\n", pthread_self(), __func__,
-                      strerror(error));
+            log_error("[%d] %s(unlock clients vector, ignored): %s\n",
+                      pthread_self(), __func__, strerror(error));
         }
     }
+}
+
+/*
+ * client MUST be locked
+ */
+int lock_vector_containing_locked_client(struct client *client)
+{
+    // check for vhost existence
+    if (client->vhost == NULL)
+    {
+        log_error("[%d] %s(client vhost check): no vhost associated to the "
+                  "client %d\n",
+                  pthread_self(), __func__, client->socket_fd);
+        return -1;
+    }
+    // lock vector in which the client resides
+    {
+        int error;
+        if ((error = pthread_mutex_lock(&client->vhost->clients_mutex)))
+        {
+            log_error("[%d] %s(lock clients vector): %s\n", pthread_self(),
+                      __func__, strerror(error));
+            return -1;
+        }
+    }
+
+    return 0;
 }

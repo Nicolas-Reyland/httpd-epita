@@ -1,6 +1,7 @@
 #ifndef JOB_H
 #define JOB_H
 
+#include <stddef.h>
 #include <sys/types.h>
 
 #include "multithreading/job/job_type.h"
@@ -12,6 +13,8 @@ struct job
     enum job_type type;
     int socket_fd;
     ssize_t index;
+    // for debugging purposes only
+    size_t uid;
 };
 
 void add_job_to_queue(struct job job);

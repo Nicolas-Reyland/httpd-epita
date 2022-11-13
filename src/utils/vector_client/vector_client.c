@@ -59,10 +59,13 @@ void destroy_vector_client(struct vector_client *v)
  * This function locks the client, returns it and does NOT unlock it
  * That is the calling function's job !
  *
+ * The vector 'v' MUST be locked
+ *
  */
 struct client *vector_client_find(struct vector_client *v, int socket_fd,
                                   bool wait)
 {
+    // Decide on which lock function to use (blocking or nonblocking)
     int (*lock_function)(pthread_mutex_t *) = NULL;
     if (wait)
         lock_function = pthread_mutex_lock;
@@ -89,11 +92,17 @@ struct client *vector_client_find(struct vector_client *v, int socket_fd,
 struct vector_client *vector_client_resize(struct vector_client *v, size_t n)
 {
     if (v == NULL)
+    {
+        log_warn("[%d] %s: v is NULL in resize\n", pthread_self(), __func__);
         return NULL;
+    }
 
     v->data = realloc(v->data, (v->capacity = n) * sizeof(struct client *));
     if (v->data == NULL)
+    {
+        log_error("[%d] %s: Out of memory\n", pthread_self(), __func__);
         return NULL;
+    }
 
     if (v->capacity < v->size)
         v->size = v->capacity;
@@ -114,22 +123,26 @@ bool vector_client_valid_index(struct vector_client *v, ssize_t index)
 ** Append an element to the end of the vector_client. Expand the vector_client
 *if needed.
 ** Returns `NULL` if an error occured.
+**
+** The vector MUST be locked (don't care about client)
+**
 */
 struct vector_client *vector_client_append(struct vector_client *v,
                                            struct client *client)
 {
+    log_debug("[%d] %s: Adding client %d to v\n", pthread_self(), __func__,
+              client->socket_fd);
+
     if (v == NULL)
     {
+        log_error("[%d] %s: vector is NULL\n", pthread_self(), __func__);
         destroy_client(client, true);
         return NULL;
     }
 
     if (v->size == v->capacity)
-    {
-        v = vector_client_resize(v, 2 * v->capacity);
-        if (v == NULL)
+        if ((v = vector_client_resize(v, 2 * v->capacity)) == NULL)
             return NULL;
-    }
 
     v->data[(client->index = v->size++)] = client;
     return v;
@@ -140,7 +153,7 @@ struct vector_client *vector_client_append(struct vector_client *v,
 ** Replace it with the last element.
 ** Returns `NULL` if an error occured.
 **
-** The client MUST be locked
+** The vector and client MUST be locked
 **
 */
 struct vector_client *vector_client_remove(struct client *client)
@@ -155,8 +168,6 @@ struct vector_client *vector_client_remove(struct client *client)
         return NULL;
     size_t uindex = client->index;
 
-    // TODO: lock the vector (we are modifying values)
-
     /*
      * First set the client to null.
      * This is because in the destroy_client call, the mutex
@@ -168,15 +179,26 @@ struct vector_client *vector_client_remove(struct client *client)
     destroy_client(client, true);
 
     // Replace
-    if (uindex != v->size - 1 && v->data[v->size - 1] != NULL
-        && pthread_mutex_lock(&v->data[v->size - 1]->mutex) == 0)
+    size_t last_index = v->size - 1;
+    if (uindex != last_index && v->data[last_index] != NULL)
     {
-        // Redo the read of the last client
-        v->data[index] = v->data[v->size - 1];
-        v->data[index]->index = index;
-        --v->size;
-        pthread_mutex_unlock(&v->data[index]->mutex);
+        int error;
+        if ((error = pthread_mutex_lock(&v->data[last_index]->mutex)))
+        {
+            log_error("[%d] %s(lock last mutex): %s\n", pthread_self(),
+                      __func__, strerror(error));
+        }
+        else
+        {
+            // Redo the read of the last client (it is locked now)
+            v->data[index] = v->data[last_index];
+            v->data[index]->index = index;
+            if ((error = pthread_mutex_unlock(&v->data[index]->mutex)))
+                log_error("[%d] %s(unlock last mutex): %s\n", pthread_self(),
+                          __func__, strerror(error));
+        }
     }
+    --v->size;
 
     size_t half_cap = v->capacity / 2;
     v = v->size < half_cap ? vector_client_resize(v, half_cap) : v;

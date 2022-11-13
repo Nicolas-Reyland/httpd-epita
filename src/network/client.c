@@ -70,8 +70,8 @@ int release_client(struct client *client)
     int error;
     if ((error = pthread_mutex_unlock(&client->mutex)) != 0)
     {
-        log_error("Unable to unlock mutex (%s) for client with socket fd %d\n",
-                  strerror(error), client->socket_fd);
+        log_error("[%d] %s(generic unlock client %d): %s\n", pthread_self(),
+                  __func__, client->socket_fd, strerror(error));
         return -1;
     }
 
@@ -80,6 +80,9 @@ int release_client(struct client *client)
 
 /*
  * Will NOT free the vhost
+ *
+ * client MUST be locked
+ *
  */
 void destroy_client(struct client *client, bool free_obj)
 {
@@ -100,11 +103,11 @@ void destroy_client(struct client *client, bool free_obj)
     {
         int error;
         if ((error = pthread_mutex_unlock(&client->mutex)))
-            log_error("[%d] %s(mutex unlock): %s\n", pthread_self(), __func__,
-                      strerror(error));
+            log_error("[%d] %s(unlock self mutex): %s\n", pthread_self(),
+                      __func__, strerror(error));
         if ((error = pthread_mutex_destroy(&client->mutex)))
-            log_error("[%d] %s(mutex destroy): %s\n", pthread_self(), __func__,
-                      strerror(error));
+            log_error("[%d] %s(destroy self mutex): %s\n", pthread_self(),
+                      __func__, strerror(error));
     }
 
     if (free_obj)

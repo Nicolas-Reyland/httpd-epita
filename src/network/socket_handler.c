@@ -43,14 +43,11 @@ void register_connection(int host_socket_fd)
 
         if (client_socket_fd == -1)
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                break;
-            else
-            {
-                log_error("Could not accept connection for host %s\n",
-                          hash_map_get(vhost->map, "server_name"));
-                break;
-            }
+            if (errno != EAGAIN && errno != EWOULDBLOCK)
+                log_error("Could not accept connection for host %s: %s\n",
+                          hash_map_get(vhost->map, "server_name"),
+                          strerror(errno));
+            break;
         }
 
         char host_buffer[256], port_buffer[256];
@@ -89,6 +86,13 @@ void register_connection(int host_socket_fd)
         char *client_ip_addr = g_state.logging ? strdup(host_buffer) : NULL;
         struct client *new_client =
             init_client(vhost, client_socket_fd, client_ip_addr);
+        if (new_client == NULL)
+        {
+            CLOSE_ALL(client_socket_fd);
+            log_error("[%d] %s(init client): failed to initialize client\n",
+                      pthread_self(), __func__);
+            continue;
+        }
 
         // lock clients vector
         {
@@ -101,7 +105,9 @@ void register_connection(int host_socket_fd)
                 continue;
             }
             vector_client_append(vhost->clients, new_client);
-            pthread_mutex_unlock(&vhost->clients_mutex);
+            if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
+                log_error("[%d] %s(clients unlock, ignored): %s\n",
+                          pthread_self(), strerror(error));
         }
     }
 }
@@ -122,8 +128,25 @@ struct client *client_from_client_socket(int socket_fd, bool wait)
 {
     for (size_t i = 0; i < g_state.env->config->num_vhosts; ++i)
     {
+        struct vhost *vhost = g_state.env->vhosts + i;
+        // lock the vector
+        {
+            int error;
+            if ((error = pthread_mutex_lock(&vhost->clients_mutex)))
+            {
+                log_error("[%d] %s(lock clients vector, continue): %s\n",
+                          pthread_self(), __func__, strerror(error));
+                continue;
+            }
+        }
         struct client *client =
-            vector_client_find(g_state.env->vhosts[i].clients, socket_fd, wait);
+            vector_client_find(vhost->clients, socket_fd, wait);
+        {
+            int error;
+            if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
+                log_error("[%d] %s(unlock clients vector, ignore): %s\n",
+                          pthread_self(), __func__, strerror(error));
+        }
         if (client != NULL)
             return client;
     }

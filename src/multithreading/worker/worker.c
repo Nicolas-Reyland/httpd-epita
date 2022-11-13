@@ -51,7 +51,7 @@ void start_worker(void)
                                 NULL, &worker_start_routine, NULL))
             == 0)
         {
-            log_debug("Started worker thread %d\n",
+            log_debug("Started worker thread [%d]\n",
                       g_state.thread_ids[g_state.num_active_threads]);
             ++g_state.num_active_threads;
         }
@@ -92,8 +92,6 @@ static struct job get_next_job(void);
 
 static void *worker_start_routine(void *ptr)
 {
-    log_debug("Currently in thread %d !\n", pthread_self());
-
     while (1)
     {
         struct job job = get_next_job();
@@ -119,8 +117,9 @@ static void *worker_start_routine(void *ptr)
         if ((error = pthread_mutex_unlock(&g_state.num_active_threads_mutex)))
             log_error("[%d] %s(num_active_threads unlock): %s\n",
                       pthread_self(), __func__, strerror(error));
+        log_debug("[%d] %s: finished work. exiting\n", pthread_self(),
+                  __func__);
     }
-    log_debug("[%d] %s: finished work. exiting\n", pthread_self(), __func__);
 
     return ptr;
 }

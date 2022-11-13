@@ -342,15 +342,12 @@ struct request *sub_parser_request(char *raw_request, size_t size)
  *   Function: verify if there is the options host in req->options
  *              in case of error, set the *err and return the error number
  */
-static int not_contain_host(struct pair_list *options, int(*err))
+static int not_contain_host(struct hash_map *hash_map, int(*err))
 {
-    while (options)
+    char *key = hash_map_get(hash_map, "Host");
+    if(key)
     {
-        if (strcmp(options->key, "Host") == 0)
-        {
-            return 0;
-        }
-        options = options->next;
+        return 0;
     }
     *err = HOST_ERR;
     return HOST_ERR;
@@ -406,7 +403,7 @@ struct request *parser_request(char *raw_request, size_t size, int(*err),
 
     if (is_not_method_allowed(req->method, err)
         || is_not_protocol_valid(req->version, err)
-        || not_contain_host(req->hash_map->data[0], err))
+        || not_contain_host(req->hash_map, err))
     {
         return req;
     }

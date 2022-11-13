@@ -111,7 +111,7 @@ char *hash_map_get(const struct hash_map *hash_map, char *key)
     {
         for (struct pair_list *list = hash_map->data[i]; list != NULL;
              list = list->next)
-            if (strcmp(key, list->key) == 0)
+            if (strcasecmp(key, list->key) == 0)
                 return list->value;
     }
 

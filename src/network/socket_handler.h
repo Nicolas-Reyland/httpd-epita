@@ -12,7 +12,7 @@ void process_data(struct client *client, char *data, size_t size);
 
 ssize_t incoming_connection(int client_socket_fd);
 
-void close_connection(int client_socket_fd);
+void close_connection(struct client *client);
 
 struct vhost *vhost_from_host_socket(int socket_fd);
 

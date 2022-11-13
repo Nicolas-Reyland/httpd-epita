@@ -94,7 +94,7 @@ void execute_process_job(struct job job)
     {
         // close the connection now : why bother adding the task to another
         // thread ? the client is already locked, so let's do it now
-        close_connection(client->socket_fd);
+        close_connection(client);
     }
     else
     {
@@ -129,7 +129,7 @@ void execute_close_job(struct job job)
     }
 
     // work
-    close_connection(client->socket_fd);
+    close_connection(client);
 
     // unlock client and return
     {

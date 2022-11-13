@@ -71,7 +71,7 @@ struct client *vector_client_find(struct vector_client *v, int socket_fd,
 
     for (size_t i = 0; i < v->size; ++i)
     {
-        if ((*lock_function)(&v->data[i]->mutex) == 0)
+        if (v->data[i] != NULL && (*lock_function)(&v->data[i]->mutex) == 0)
         {
             struct client *client = v->data[i];
             if (client->socket_fd == socket_fd)
@@ -140,7 +140,7 @@ struct vector_client *vector_client_append(struct vector_client *v,
 ** Replace it with the last element.
 ** Returns `NULL` if an error occured.
 **
-** The client at index 'i' MUST be locked
+** The client MUST be locked
 **
 */
 struct vector_client *vector_client_remove(struct client *client)
@@ -153,15 +153,22 @@ struct vector_client *vector_client_remove(struct client *client)
     ssize_t index = client->index;
     if (v == NULL || !vector_client_valid_index(v, index))
         return NULL;
+    size_t uindex = client->index;
 
     // TODO: lock the vector (we are modifying values)
 
-    // Destroy the client
-    destroy_client(client, true);
+    /*
+     * First set the client to null.
+     * This is because in the destroy_client call, the mutex
+     * associated to the client is first unlocked, then
+     * destroyed. To prevent a thread to lock the client between
+     * these two operations, we must first set it to null in the vector
+     */
     v->data[index] = NULL;
+    destroy_client(client, true);
 
     // Replace
-    if (pthread_mutex_lock(&v->data[v->size - 1]->mutex) == 0)
+    if (uindex != v->size - 1 && pthread_mutex_lock(&v->data[v->size - 1]->mutex) == 0)
     {
         // Redo the read of the last client
         v->data[index] = v->data[v->size - 1];

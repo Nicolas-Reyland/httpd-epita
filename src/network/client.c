@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include <sys/epoll.h>
 
 #include "utils/logging.h"
@@ -28,7 +29,7 @@ struct client *init_client(struct vhost *vhost, int socket_fd, char *ip_addr)
         if ((error = pthread_mutex_init(&mutex, NULL)))
         {
             FREE_SET_NULL(client);
-            log_error("%s(pthread_mutex_init): %s\n", __func__,
+            log_error("[%d] %s(pthread_mutex_init): %s\n", pthread_self(), __func__,
                       strerror(error));
             return NULL;
         }
@@ -85,14 +86,18 @@ void destroy_client(struct client *client, bool free_obj)
     // Close socket first
     epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client->socket_fd, NULL);
     if (close(client->socket_fd) == -1)
-        log_warn("%s(close): %s\n", __func__, strerror(errno));
+        log_warn("[%d] %s(close): %s\n", pthread_self(), __func__, strerror(errno));
 
     FREE_SET_NULL(client->ip_addr);
 
     {
         int error;
+        if ((error = pthread_mutex_unlock(&client->mutex))
+           )
+            log_error("[%d] %s(mutex unlock): %s\n", pthread_self(), __func__,
+                     strerror(error));
         if ((error = pthread_mutex_destroy(&client->mutex)))
-            log_warn("%s(pthread_mutex_destroy): %s\n", __func__,
+            log_error("[%d] %s(mutex destroy): %s\n", pthread_self(), __func__,
                      strerror(error));
     }
 

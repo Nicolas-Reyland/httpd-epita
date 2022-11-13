@@ -59,7 +59,7 @@ void register_connection(int host_socket_fd)
                         NI_NUMERICHOST | NI_NUMERICSERV)
             == 0)
         {
-            log_debug("Accepted connection on descriptor %d @ %s:%s\n",
+            log_info("Accepted connection on descriptor %d @ %s:%s\n",
                       client_socket_fd, host_buffer, port_buffer);
         }
 
@@ -171,23 +171,12 @@ ssize_t incoming_connection(int client_socket_fd)
     return -1;
 }
 
-void close_connection(int client_socket_fd)
+void close_connection(struct client *client)
 {
-    log_message(LOG_STDOUT, "%s: Closing connection with %d\n", __func__,
-                client_socket_fd);
+    log_info("%s: Closing connection with %d\n", __func__,
+                client->socket_fd);
     // Remove (deregister) the file descriptor
-    epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client_socket_fd, NULL);
-    // close the connection on our end, too
-    close(client_socket_fd);
-    // remove link between vhost and client
-    struct client *client = client_from_client_socket(client_socket_fd, false);
-    if (client == NULL)
-    {
-        log_error("%s: Could not find host associated to socket %d\n", __func__,
-                  client_socket_fd);
-        return;
-    }
+    epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client->socket_fd, NULL);
+    // destroy the client (closing file descriptors in the process)
     vector_client_remove(client);
-    // Unlock mutex
-    pthread_mutex_unlock(&client->mutex);
 }

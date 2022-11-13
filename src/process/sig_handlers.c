@@ -25,8 +25,22 @@ void signal_handler(int signum)
     case SIGUSR1:
         reload_config();
         break;
+#ifdef CATCH_SIGUSR2
+    case SIGUSR2:
+        if (g_state.log_level == LOG_EPITA)
+        {
+            g_state.log_level = LOG_DEBUG;
+            log_debug("setting log level to LOG_DEBUG\n");
+        }
+        else
+        {
+            log_debug("setting log level to LOG_EPITA\n");
+            g_state.log_level = LOG_EPITA;
+        }
+        break;
+#endif /* CATCH_SIGUSR2 */
     default:
-        log_error("Unknown signal %s\n", strsignal(signum));
+        log_error("caught unknown signal: %s\n", strsignal(signum));
         break;
     }
 }

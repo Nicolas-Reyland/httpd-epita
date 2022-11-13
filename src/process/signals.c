@@ -15,6 +15,9 @@ int setup_signal_handlers(void)
 
     if (sigaction(SIGINT, &action, NULL) == -1
         || sigaction(SIGUSR1, &action, NULL) == -1
+#ifdef CATCH_SIGUSR2
+        || sigaction(SIGUSR2, &action, NULL) == -1
+#endif /* CATCH_SIGUSR2 */
         || sigaction(SIGUSR2, &action, NULL) == -1
         || sigaction(SIGTERM, &action, NULL) == -1
         || sigaction(SIGPIPE, &action, NULL) == -1)

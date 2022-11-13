@@ -60,7 +60,7 @@ void register_connection(int host_socket_fd)
             == 0)
         {
             log_info("Accepted connection on descriptor %d @ %s:%s\n",
-                      client_socket_fd, host_buffer, port_buffer);
+                     client_socket_fd, host_buffer, port_buffer);
         }
 
         if (!set_socket_nonblocking_mode(client_socket_fd))
@@ -173,8 +173,7 @@ ssize_t incoming_connection(int client_socket_fd)
 
 void close_connection(struct client *client)
 {
-    log_info("%s: Closing connection with %d\n", __func__,
-                client->socket_fd);
+    log_info("%s: Closing connection with %d\n", __func__, client->socket_fd);
     // Remove (deregister) the file descriptor
     epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client->socket_fd, NULL);
     // destroy the client (closing file descriptors in the process)

@@ -117,7 +117,8 @@ static void *worker_start_routine(void *ptr)
     {
         int error;
         if ((error = pthread_mutex_unlock(&g_state.num_active_threads_mutex)))
-            log_error("[%d] %s(num_active_threads unlock): %s\n", pthread_self(), __func__, strerror(error));
+            log_error("[%d] %s(num_active_threads unlock): %s\n",
+                      pthread_self(), __func__, strerror(error));
     }
     log_debug("[%d] %s: finished work. exiting\n", pthread_self(), __func__);
 
@@ -129,8 +130,8 @@ static struct job get_next_job(void)
     int error;
     if ((error = pthread_mutex_lock(&g_state.queue_mutex)))
     {
-        log_error("[%d] %s(job queue lock): %s\n", pthread_self(),
-                  __func__, strerror(error));
+        log_error("[%d] %s(job queue lock): %s\n", pthread_self(), __func__,
+                  strerror(error));
         // TODO: don't want infinite recursion, but kinda want to call
         // 'worker_start_routine' again ...
         pthread_exit(NULL);
@@ -141,8 +142,8 @@ static struct job get_next_job(void)
 
     if ((error = pthread_mutex_unlock(&g_state.queue_mutex)))
     {
-        log_error("[%d] %s(job queue unlock): %s\n", pthread_self(),
-                  __func__, strerror(error));
+        log_error("[%d] %s(job queue unlock): %s\n", pthread_self(), __func__,
+                  strerror(error));
         pthread_exit(NULL);
     }
 

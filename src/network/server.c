@@ -36,7 +36,7 @@ static struct server_env *setup_server(struct server_config *config);
 
 _Noreturn void start_all(struct server_config *config, char *pid_file)
 {
-    log_info("Starting server [%d]\n", getpid());
+    log_info("init server w/ pid: %d\n", getpid());
     if (write_process_pid(pid_file) == -1)
     {
         log_error("Could not write process pid to file at '%s'\n", pid_file);
@@ -55,11 +55,13 @@ _Noreturn void start_all(struct server_config *config, char *pid_file)
         free_server_config(config, true);
         exit(EXIT_FAILURE);
     }
-    log_info("Setup done. Starting server.\n");
 
     // Setup all the global variables
     if (setup_g_state(env) == -1)
         graceful_shutdown();
+
+    log_info("Setup done. Running server with max %zu worker threads\n",
+             g_state.max_num_threads);
 
     // Everything is up and ready ! Get it running !!!
     run_server(env);

@@ -83,6 +83,12 @@ int release_client(struct client *client)
  */
 void destroy_client(struct client *client, bool free_obj)
 {
+    if (client == NULL)
+    {
+        log_warn("%s: trying to free NULL client\n", __func__);
+        return;
+    }
+
     // Close socket first
     epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client->socket_fd, NULL);
     if (close(client->socket_fd) == -1)

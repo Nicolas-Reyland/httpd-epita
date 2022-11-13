@@ -34,7 +34,7 @@ void log_warn(const char *format, ...)
     va_list args;
     va_start(args, format);
 
-    log_message(LOG_STDOUT | LOG_WARN, "\033[33m{WARN}\033[39m ");
+    log_message(LOG_STDERR | LOG_WARN, "\033[33m{WARN}\033[39m ");
     vlog_message(LOG_STDERR | LOG_WARN, format, args);
 
     va_end(args);

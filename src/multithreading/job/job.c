@@ -108,7 +108,7 @@ void execute_process_job(struct job job)
         int error;
         if ((error = pthread_mutex_unlock(&client->mutex)))
         {
-            log_debug("[%d] %s(unlock clients): %s\n", pthread_self(), __func__,
+            log_error("[%d] %s(unlock client): %s\n", pthread_self(), __func__,
                       strerror(error));
         }
     }
@@ -136,7 +136,7 @@ void execute_close_job(struct job job)
         int error;
         if ((error = pthread_mutex_unlock(&client->mutex)))
         {
-            log_debug("[%d] %s(unlock clients): %s\n", pthread_self(), __func__,
+            log_error("[%d] %s(unlock client): %s\n", pthread_self(), __func__,
                       strerror(error));
         }
     }

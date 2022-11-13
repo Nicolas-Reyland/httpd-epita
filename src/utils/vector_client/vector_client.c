@@ -168,7 +168,7 @@ struct vector_client *vector_client_remove(struct client *client)
     destroy_client(client, true);
 
     // Replace
-    if (uindex != v->size - 1
+    if (uindex != v->size - 1 && v->data[v->size - 1] != NULL
         && pthread_mutex_lock(&v->data[v->size - 1]->mutex) == 0)
     {
         // Redo the read of the last client

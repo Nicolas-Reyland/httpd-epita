@@ -24,6 +24,8 @@
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
+#include "utils/vector/vector.h"
+#include "utils/vector_str/vector_str.h"
 
 // this is just a btach size for events ...
 // not the max number of sockets in the epoll
@@ -188,7 +190,7 @@ struct server_env *setup_server(struct server_config *config)
     int epoll_fd = epoll_create(1);
     if (epoll_fd == -1)
     {
-        FREE_SET_NULL(env, events);
+        FREE_SET_NULL(env, vhosts, events);
         log_error("Could not create epoll file descriptor\n");
         return NULL;
     }
@@ -209,8 +211,13 @@ struct server_env *setup_server(struct server_config *config)
             // close all the previously opened sockets
             for (size_t j = 0; j < i; ++j)
                 free_vhost(vhosts + j, false, false);
+            for (size_t j = i; j < config->num_vhosts; ++j)
+            {
+                free_vector(vhosts[j].clients);
+                free_vector_str(vhosts[j].client_ips);
+            }
 
-            FREE_SET_NULL(env, events)
+            FREE_SET_NULL(env, vhosts, events)
             return NULL;
         }
     }

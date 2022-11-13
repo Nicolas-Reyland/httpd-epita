@@ -79,13 +79,24 @@ int job_queue_push(struct job_queue *job_queue, struct job job)
 
 struct job job_queue_head(struct job_queue *job_queue)
 {
+    struct job job_idle = { .type = JOB_IDLE };
+    if (job_queue == NULL || job_queue->size == 0)
+        return job_idle;
+
     return job_queue->head->job;
 }
 
-void job_queue_pop(struct job_queue *job_queue)
+void job_queue_pop(struct job_queue *job_queue, struct job *job)
 {
-    if (job_queue->head == NULL)
+    struct job job_idle = { .type = JOB_IDLE };
+    *job = job_idle;
+
+    if (job_queue == NULL || job_queue->head == NULL)
         return;
+
+    // Set the value
+    *job = job_queue_head(job_queue);
+
     if (job_queue_size(job_queue) == 1)
     {
         job_queue_clear(job_queue);

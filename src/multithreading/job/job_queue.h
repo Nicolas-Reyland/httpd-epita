@@ -22,7 +22,7 @@ int job_queue_push(struct job_queue *job_queue, struct job job);
 
 struct job job_queue_head(struct job_queue *job_queue);
 
-void job_queue_pop(struct job_queue *job_queue);
+void job_queue_pop(struct job_queue *job_queue, struct job *job);
 
 void job_queue_clear(struct job_queue *job_queue);
 

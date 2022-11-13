@@ -16,4 +16,6 @@ struct job
 
 void add_job_to_queue(struct job job);
 
+void execute_job(struct job job);
+
 #endif /* !JOB_H */

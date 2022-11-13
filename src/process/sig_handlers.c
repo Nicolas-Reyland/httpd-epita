@@ -37,18 +37,23 @@ _Noreturn void graceful_shutdown(void)
 
     free_server_env(g_state.env, true, true);
 
-    /*
-     * TODO: uncomment this when worker threads are implemented
-    for (size_t i = 0; i < g_state.num_threads; ++i)
-        pthread_join(g_sate.thread_ids[i], NULL);
-    */
+    // Join all the active threads
+    pthread_mutex_lock(&g_state.num_active_threads_mutex);
+    for (size_t i = 0; i < g_state.num_active_threads; ++i)
+        pthread_join(g_state.thread_ids[i], NULL);
+    pthread_mutex_unlock(&g_state.num_active_threads_mutex);
+    pthread_mutex_destroy(&g_state.num_active_threads_mutex);
+    // Destroy thread ids buffer
     free(g_state.thread_ids);
 
+    // Close logging stream if needed
     if (g_state.log_file_stream != NULL && g_state.log_file_stream != stdout)
         fclose(g_state.log_file_stream);
 
+    // Destroy job queue in a thread-safe way
     pthread_mutex_lock(&g_state.queue_mutex);
     job_queue_destroy(g_state.job_queue);
+    g_state.job_queue = NULL;
     pthread_mutex_unlock(&g_state.queue_mutex);
     pthread_mutex_destroy(&g_state.queue_mutex);
 

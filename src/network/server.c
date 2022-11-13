@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "multithreading/worker/worker.h"
 #include "network/socket_handler.h"
 #include "network/vhost.h"
 #include "process/sig_handlers.h"
@@ -125,7 +126,6 @@ _Noreturn void run_server(struct server_env *env)
                 };
                 add_job_to_queue(close_job);
                 // close_connection(env, socket_fd);
-                continue;
             }
             // File not available for reading, so just skipping it
             if (!(env->events[i].events & EPOLLIN))
@@ -171,6 +171,10 @@ _Noreturn void run_server(struct server_env *env)
                 free(data);
                 */
             }
+
+            // A worker is only start if the number of active threads is not
+            // already reached
+            start_worker();
         }
     }
 

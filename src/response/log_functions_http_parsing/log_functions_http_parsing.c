@@ -5,8 +5,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "utils/logging.h"
 #include "response/response.h"
+#include "utils/logging.h"
 #include "utils/state.h"
 
 //--------------------------------------------------------------------------------

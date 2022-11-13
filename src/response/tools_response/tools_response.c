@@ -11,8 +11,8 @@
 #include <unistd.h>
 
 #include "process/sig_handlers.h"
-#include "utils/logging.h"
 #include "response/response.h"
+#include "utils/logging.h"
 
 #define READ_BUFF_SIZE 4096
 #define _XOPEN_SOURCE_EXTENDED 1

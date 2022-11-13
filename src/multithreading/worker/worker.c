@@ -108,14 +108,18 @@ static void *worker_start_routine(void *ptr)
     if (num_active == -1)
     {
         log_error(
-            "CRITICAL [thread-id: %d] %s: could not lock num active threads\n"
+            "CRITICAL [%d] %s: could not lock num active threads\n"
             " - Definately losing one thread, until next join is called\n",
             pthread_self(), __func__);
         pthread_exit(NULL);
     }
-
     --g_state.num_active_threads;
-    log_debug("Exiting thread\n");
+    {
+        int error;
+        if ((error = pthread_mutex_unlock(&g_state.num_active_threads_mutex)))
+            log_error("[%d] %s(num_active_threads unlock): %s\n", pthread_self(), __func__, strerror(error));
+    }
+    log_debug("[%d] %s: finished work. exiting\n", pthread_self(), __func__);
 
     return ptr;
 }
@@ -125,7 +129,7 @@ static struct job get_next_job(void)
     int error;
     if ((error = pthread_mutex_lock(&g_state.queue_mutex)))
     {
-        log_error("[thread-id: %d] %s(job queue lock): %s\n", pthread_self(),
+        log_error("[%d] %s(job queue lock): %s\n", pthread_self(),
                   __func__, strerror(error));
         // TODO: don't want infinite recursion, but kinda want to call
         // 'worker_start_routine' again ...
@@ -137,7 +141,7 @@ static struct job get_next_job(void)
 
     if ((error = pthread_mutex_unlock(&g_state.queue_mutex)))
     {
-        log_error("[thread-id: %d] %s(job queue unlock): %s\n", pthread_self(),
+        log_error("[%d] %s(job queue unlock): %s\n", pthread_self(),
                   __func__, strerror(error));
         pthread_exit(NULL);
     }

@@ -14,10 +14,10 @@ struct request
     size_t body_size;
     char *body;
     struct hash_map *hash_map;
-    //ssize_t index;
+    // ssize_t index;
 };
 
-struct request *parser_request(char *raw_request, size_t size, int( *err));
+struct request *parser_request(char *raw_request, size_t size, int(*err));
 void free_request(struct request *req);
 
 #endif /* !PARSER_REQUEST_H */

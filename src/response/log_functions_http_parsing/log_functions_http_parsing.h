@@ -5,8 +5,8 @@
 #include <sys/types.h>
 
 #include "network/vhost.h"
-#include "utils/parsers/http/parser_request.h"
 #include "response/response.h"
+#include "utils/parsers/http/parser_request.h"
 
 void log_request(struct client *client, struct request *req, int *status_code);
 

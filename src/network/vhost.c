@@ -52,6 +52,9 @@ struct vhost init_vhost(struct hash_map *map)
 
 void free_vhost(struct vhost *vhost, bool free_map, bool free_obj)
 {
+    if (vhost == NULL)
+        return;
+
     // and un-register socket fd
     epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, vhost->socket_fd, NULL);
     CLOSE_ALL(vhost->socket_fd);

@@ -24,16 +24,10 @@
 
 #define DEBUG_MAX_DATA_SIZE 300
 
-static struct vhost *vhost_from_host_socket(struct server_env *env,
-                                            int socket_fd);
-
-static struct client *client_from_client_socket(struct server_env *env,
-                                                int socket_fd, bool wait);
-
-void register_connection(struct server_env *env, int host_socket_fd)
+void register_connection(int host_socket_fd)
 {
     // get vhost associated to the socket fd
-    struct vhost *vhost = vhost_from_host_socket(env, host_socket_fd);
+    struct vhost *vhost = vhost_from_host_socket(host_socket_fd);
     if (vhost == NULL)
     {
         log_error("Could not find host from socket_fd %d\n", host_socket_fd);
@@ -65,9 +59,8 @@ void register_connection(struct server_env *env, int host_socket_fd)
                         NI_NUMERICHOST | NI_NUMERICSERV)
             == 0)
         {
-            log_message(LOG_STDOUT | LOG_DEBUG,
-                        "Accepted connection on descriptor %d @ %s:%s\n",
-                        client_socket_fd, host_buffer, port_buffer);
+            log_debug("Accepted connection on descriptor %d @ %s:%s\n",
+                      client_socket_fd, host_buffer, port_buffer);
         }
 
         if (!set_socket_nonblocking_mode(client_socket_fd))
@@ -81,7 +74,8 @@ void register_connection(struct server_env *env, int host_socket_fd)
         struct epoll_event event = { 0 };
         event.data.fd = client_socket_fd;
         event.events = EPOLLIN | EPOLLET;
-        if (epoll_ctl(env->epoll_fd, EPOLL_CTL_ADD, client_socket_fd, &event)
+        if (epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_ADD, client_socket_fd,
+                      &event)
             == -1)
         {
             CLOSE_ALL(client_socket_fd);
@@ -94,26 +88,41 @@ void register_connection(struct server_env *env, int host_socket_fd)
         char *client_ip_addr = g_state.logging ? strdup(host_buffer) : NULL;
         struct client *new_client =
             init_client(vhost, client_socket_fd, client_ip_addr);
-        vector_client_append(vhost->clients, new_client);
+
+        // lock clients vector
+        {
+            int error;
+            if ((error = pthread_mutex_lock(&vhost->clients_mutex)))
+            {
+                log_error("[%d] %s(clients lock): %s\n", pthread_self(),
+                          __func__, strerror(error));
+                destroy_client(new_client, true);
+                continue;
+            }
+            vector_client_append(vhost->clients, new_client);
+            pthread_mutex_unlock(&vhost->clients_mutex);
+        }
     }
 }
 
-struct vhost *vhost_from_host_socket(struct server_env *env, int socket_fd)
+struct vhost *vhost_from_host_socket(int socket_fd)
 {
-    for (size_t i = 0; i < env->config->num_vhosts; ++i)
-        if (socket_fd == env->vhosts[i].socket_fd)
-            return env->vhosts + i;
+    for (size_t i = 0; i < g_state.env->config->num_vhosts; ++i)
+        if (socket_fd == g_state.env->vhosts[i].socket_fd)
+            return g_state.env->vhosts + i;
 
     return NULL;
 }
 
-struct client *client_from_client_socket(struct server_env *env, int socket_fd,
-                                         bool wait)
+/*
+ * Locks the mutex on a return != NULL
+ */
+struct client *client_from_client_socket(int socket_fd, bool wait)
 {
-    for (size_t i = 0; i < env->config->num_vhosts; ++i)
+    for (size_t i = 0; i < g_state.env->config->num_vhosts; ++i)
     {
         struct client *client =
-            vector_client_find(env->vhosts[i].clients, socket_fd, wait);
+            vector_client_find(g_state.env->vhosts[i].clients, socket_fd, wait);
         if (client != NULL)
             return client;
     }
@@ -121,9 +130,14 @@ struct client *client_from_client_socket(struct server_env *env, int socket_fd,
     return NULL;
 }
 
-void process_data(struct server_env *env, int event_index, char *data,
-                  size_t size)
+void process_data(struct client *client, char *data, size_t size)
 {
+    if (client == NULL)
+    {
+        log_error("%s: Got null client\n", __func__);
+        return;
+    }
+
     if (data == NULL)
     {
         log_error("%s: Got empty data\n", __func__);
@@ -135,20 +149,6 @@ void process_data(struct server_env *env, int event_index, char *data,
         // Don't want to allocate this if we aren't debugging
         log_debug("Got: '''\n%s\n'''\n",
                   strncat(memset(alloca(size + 1), 0, 1), data, size));
-
-    int client_socket_fd = env->events[event_index].data.fd;
-    // Why wait ?
-    struct client *client =
-        client_from_client_socket(env, client_socket_fd, false);
-
-    // Shoul never occur, but ok why not...
-    if (client == NULL
-        && (client == client_from_client_socket(env, client_socket_fd, true)))
-    {
-        log_error("%s: could not find client associated to socket %d\n",
-                  __func__, client_socket_fd);
-        return;
-    }
 
     struct response *resp = parsing_http(data, size, client);
     write_response(client, resp);
@@ -162,26 +162,25 @@ void process_data(struct server_env *env, int event_index, char *data,
     free_response(resp);
 }
 
-ssize_t incoming_connection(struct server_env *env, int client_socket_fd)
+ssize_t incoming_connection(int client_socket_fd)
 {
-    for (size_t i = 0; i < env->config->num_vhosts; ++i)
-        if (client_socket_fd == env->vhosts[i].socket_fd)
+    for (size_t i = 0; i < g_state.env->config->num_vhosts; ++i)
+        if (client_socket_fd == g_state.env->vhosts[i].socket_fd)
             return i;
 
     return -1;
 }
 
-void close_connection(struct server_env *env, int client_socket_fd)
+void close_connection(int client_socket_fd)
 {
     log_message(LOG_STDOUT, "%s: Closing connection with %d\n", __func__,
                 client_socket_fd);
     // Remove (deregister) the file descriptor
-    epoll_ctl(env->epoll_fd, EPOLL_CTL_DEL, client_socket_fd, NULL);
+    epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client_socket_fd, NULL);
     // close the connection on our end, too
     close(client_socket_fd);
     // remove link between vhost and client
-    struct client *client =
-        client_from_client_socket(env, client_socket_fd, false);
+    struct client *client = client_from_client_socket(client_socket_fd, false);
     if (client == NULL)
     {
         log_error("%s: Could not find host associated to socket %d\n", __func__,

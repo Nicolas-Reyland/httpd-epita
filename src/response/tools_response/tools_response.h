@@ -2,8 +2,8 @@
 #define TOOLS_RESPONSE_H
 
 #include "network/vhost.h"
-#include "utils/parsers/http/parser_request.h"
 #include "response/response.h"
+#include "utils/parsers/http/parser_request.h"
 
 char *get_path_ressource(char *target, struct vhost *vhost);
 

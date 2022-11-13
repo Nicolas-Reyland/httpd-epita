@@ -136,7 +136,7 @@ _Noreturn void run_server(struct server_env *env)
                 continue;
             }
             // Event on the server socket: means there is one more client !
-            else if ((index = incoming_connection(env, socket_fd)) != -1)
+            else if ((index = incoming_connection(socket_fd)) != -1)
             {
                 // Maybe log new client connection ?
                 struct job accept_job = {
@@ -156,20 +156,6 @@ _Noreturn void run_server(struct server_env *env)
                     .index = index,
                 };
                 add_job_to_queue(process_job);
-                /*
-                bool alive;
-                size_t data_len;
-                char *data = read_from_connection(socket_fd, &data_len, &alive);
-                if (!alive)
-                {
-                    close_connection(env, socket_fd);
-                    continue;
-                }
-                // when threading, add (i, data, size) to queue instead of
-                // doing it now, in the main loop
-                process_data(env, i, data, data_len);
-                free(data);
-                */
             }
 
             // A worker is only start if the number of active threads is not

@@ -12,6 +12,7 @@ void log_debug(const char *format, ...)
     va_list args;
     va_start(args, format);
 
+    log_message(LOG_STDOUT | LOG_DEBUG, "\033[94m{DEBUG}\033[39m ");
     vlog_message(LOG_STDOUT | LOG_DEBUG, format, args);
 
     va_end(args);
@@ -22,6 +23,7 @@ void log_info(const char *format, ...)
     va_list args;
     va_start(args, format);
 
+    log_message(LOG_STDOUT | LOG_INFO, "\033[32m{INFO}\033[39m ");
     vlog_message(LOG_STDOUT | LOG_INFO, format, args);
 
     va_end(args);
@@ -32,7 +34,19 @@ void log_warn(const char *format, ...)
     va_list args;
     va_start(args, format);
 
+    log_message(LOG_STDOUT | LOG_WARN, "\033[33m{WARN}\033[39m ");
     vlog_message(LOG_STDERR | LOG_WARN, format, args);
+
+    va_end(args);
+}
+
+void log_error(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    log_message(LOG_ERROR | LOG_STDERR, "\033[91m{ERROR}\033[39m ");
+    vlog_message(LOG_ERROR | LOG_STDERR, format, args);
 
     va_end(args);
 }
@@ -43,26 +57,6 @@ void log_message(int flags, const char *format, ...)
     va_start(args, format);
 
     vlog_message(flags, format, args);
-
-    va_end(args);
-}
-
-void log_error(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    vlog_message(LOG_ERROR | LOG_STDERR, format, args);
-
-    va_end(args);
-}
-
-void log_error_and_exit(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    vlog_message(LOG_ERROR | LOG_STDERR | LOG_EXIT, format, args);
 
     va_end(args);
 }

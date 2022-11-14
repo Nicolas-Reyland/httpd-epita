@@ -58,7 +58,12 @@ int setup_g_state(struct server_env *env)
     g_state.thread_ids = calloc(g_state.max_num_threads, sizeof(pthread_t));
     if (g_state.max_num_threads != 0 && g_state.thread_ids == NULL)
     {
-        pthread_mutex_destroy(&g_state.threads_mutex);
+        {
+            int error;
+            if ((error = pthread_mutex_destroy(&g_state.threads_mutex)))
+                log_error("%s(thread ids oom: destroy mutex, ignore): %s\n",
+                          __func__, strerror(error));
+        }
         g_state.max_num_threads = 0;
         log_error("%s: Out of memory (thread_ids)\n", __func__);
         return -1;

@@ -21,7 +21,7 @@ struct vhost
 
 struct vhost *init_vhosts(struct server_config *config);
 
-struct vhost init_vhost(struct hash_map *map);
+int init_vhost(struct hash_map *map, struct vhost *vhost);
 
 void free_vhost(struct vhost *vhost, bool free_map, bool free_obj);
 

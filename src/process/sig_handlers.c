@@ -1,5 +1,6 @@
 #include "sig_handlers.h"
 
+#include <errno.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,24 +53,44 @@ _Noreturn void graceful_shutdown(void)
     free_server_env(g_state.env, true, true);
 
     // Join all the active threads
-    pthread_mutex_lock(&g_state.num_active_threads_mutex);
-    for (size_t i = 0; i < g_state.num_active_threads; ++i)
-        pthread_join(g_state.thread_ids[i], NULL);
-    pthread_mutex_unlock(&g_state.num_active_threads_mutex);
-    pthread_mutex_destroy(&g_state.num_active_threads_mutex);
+    int error;
+    if ((error = pthread_mutex_lock(&g_state.threads_mutex)))
+        log_error("%s(lock num_active_threads, continue): %s\n", __func__,
+                  strerror(error));
+    else
+    {
+        for (size_t i = 0; i < g_state.num_active_threads; ++i)
+        {
+            log_info("%s: thread %d\n", __func__, g_state.thread_ids[i]);
+            if ((error = pthread_join(g_state.thread_ids[i], NULL)))
+                log_error("%s(join thread %d, continue): %s\n", __func__,
+                          pthread_self(), strerror(error));
+        }
+        if ((error = pthread_mutex_unlock(&g_state.threads_mutex)))
+            log_error("%s(unlock num_active_threads, ignore): %s\n", __func__,
+                      strerror(error));
+        if ((error = pthread_mutex_destroy(&g_state.threads_mutex)))
+            log_error("%s(destroy num_active_threads, ignore): %s\n", __func__,
+                      strerror(error));
+    }
     // Destroy thread ids buffer
     free(g_state.thread_ids);
 
     // Close logging stream if needed
-    if (g_state.log_file_stream != NULL && g_state.log_file_stream != stdout)
-        fclose(g_state.log_file_stream);
+    if (g_state.log_file_stream != NULL && g_state.log_file_stream != stdout
+        && fclose(g_state.log_file_stream) != 0)
+        log_error("%s(fclose log_file_stream, ignore): %s\n", __func__,
+                  strerror(errno));
 
     // Destroy job queue in a thread-safe way
-    pthread_mutex_lock(&g_state.queue_mutex);
+    if ((error = pthread_mutex_lock(&g_state.queue_mutex)))
+        log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
     job_queue_destroy(g_state.job_queue);
     g_state.job_queue = NULL;
-    pthread_mutex_unlock(&g_state.queue_mutex);
-    pthread_mutex_destroy(&g_state.queue_mutex);
+    if ((error = pthread_mutex_unlock(&g_state.queue_mutex)))
+        log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
+    if ((error = pthread_mutex_destroy(&g_state.queue_mutex)))
+        log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
 
     exit(EXIT_SUCCESS);
 }

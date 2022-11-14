@@ -34,7 +34,7 @@ struct state
     size_t max_num_threads;
     pthread_t *thread_ids;
     size_t num_active_threads;
-    pthread_mutex_t num_active_threads_mutex;
+    pthread_mutex_t threads_mutex;
     // Job queue
     struct job_queue *job_queue;
     pthread_mutex_t queue_mutex;

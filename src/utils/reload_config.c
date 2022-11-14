@@ -111,9 +111,9 @@ int update_vhosts(struct server_config *new_config)
 
     // Add the new vhosts, that were not present in the old config
     for (size_t i = 0; i < new_config->num_vhosts; ++i)
-        if (!markers[old_num_vhosts + i])
-            if (reload_add_vhost(new_config->vhosts[i]) == -1)
-                return -1;
+        if (!markers[old_num_vhosts + i]
+            && reload_add_vhost(new_config->vhosts[i]) == -1)
+            return -1;
 
     FREE_SET_NULL(new_config, new_config->vhosts, markers);
     return 0;
@@ -272,7 +272,13 @@ int reload_add_vhost(struct hash_map *new_vhost_map)
     char *vhost_port = hash_map_get(new_vhost_map, "port");
     log_debug("Adding new vhost @ %s:%s\n", vhost_ip, vhost_port);
 
-    struct vhost new_vhost = init_vhost(new_vhost_map);
+    struct vhost new_vhost;
+    if (init_vhost(new_vhost_map, &new_vhost) == -1)
+    {
+        log_error("%s: failed to init vhost @ %s:%s\n", __func__, vhost_ip,
+                  vhost_port);
+        return -1;
+    }
 
     size_t index = g_state.env->config->num_vhosts++;
     g_state.env->config->vhosts[index] = new_vhost_map;

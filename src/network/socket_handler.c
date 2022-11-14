@@ -198,6 +198,9 @@ ssize_t incoming_connection(int client_socket_fd)
     return -1;
 }
 
+/*
+ * The client and the vector MUST be locked
+ */
 void close_connection(struct client *client)
 {
     log_info("[%d] Closing connection with %d\n", pthread_self(),

@@ -15,7 +15,7 @@ struct state g_state = {
     // Multi-threading
     .max_num_threads = NUM_THREADS,
     .num_active_threads = 0,
-    .num_active_threads_mutex = PTHREAD_MUTEX_INITIALIZER,
+    .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
     .thread_ids = NULL,
     // Job queue
     .job_queue = NULL,
@@ -48,10 +48,9 @@ int setup_g_state(struct server_env *env)
     g_state.max_num_threads = NUM_THREADS;
     {
         int error;
-        if ((error =
-                 pthread_mutex_init(&g_state.num_active_threads_mutex, NULL)))
+        if ((error = pthread_mutex_init(&g_state.threads_mutex, NULL)))
         {
-            log_error("%s(num_active_threads mutex init): %s\n", __func__,
+            log_error("%s(threads mutex init): %s\n", __func__,
                       strerror(error));
             return -1;
         }
@@ -59,7 +58,7 @@ int setup_g_state(struct server_env *env)
     g_state.thread_ids = calloc(g_state.max_num_threads, sizeof(pthread_t));
     if (g_state.max_num_threads != 0 && g_state.thread_ids == NULL)
     {
-        pthread_mutex_destroy(&g_state.num_active_threads_mutex);
+        pthread_mutex_destroy(&g_state.threads_mutex);
         g_state.max_num_threads = 0;
         log_error("%s: Out of memory (thread_ids)\n", __func__);
         return -1;
@@ -69,14 +68,14 @@ int setup_g_state(struct server_env *env)
     g_state.job_queue = job_queue_init();
     if (g_state.job_queue == NULL)
     {
-        pthread_mutex_destroy(&g_state.num_active_threads_mutex);
+        pthread_mutex_destroy(&g_state.threads_mutex);
         free(g_state.thread_ids);
         return -1;
     }
 
     if (pthread_mutex_init(&g_state.queue_mutex, NULL) == -1)
     {
-        pthread_mutex_destroy(&g_state.num_active_threads_mutex);
+        pthread_mutex_destroy(&g_state.threads_mutex);
         free(g_state.thread_ids);
         log_error("%s: failed to initialize mutex for job queue\n", __func__);
         return -1;

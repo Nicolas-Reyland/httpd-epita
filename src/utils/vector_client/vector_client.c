@@ -184,24 +184,25 @@ struct vector_client *vector_client_remove(struct client *client)
     {
         int error;
         if ((error = pthread_mutex_lock(&v->data[last_index]->mutex)))
-        {
-            log_error("[%d] %s(lock last mutex): %s\n", pthread_self(),
-                      __func__, strerror(error));
-        }
+            log_error("[%d] %s(lock last mutex, continue): %s\n",
+                      pthread_self(), __func__, strerror(error));
         else
         {
             // Redo the read of the last client (it is locked now)
             v->data[index] = v->data[last_index];
             v->data[index]->index = index;
+            --v->size;
+
             if ((error = pthread_mutex_unlock(&v->data[index]->mutex)))
-                log_error("[%d] %s(unlock last mutex): %s\n", pthread_self(),
-                          __func__, strerror(error));
+                log_error("[%d] %s(unlock last mutex, ignore): %s\n",
+                          pthread_self(), __func__, strerror(error));
         }
     }
-    --v->size;
+    else
+        --v->size;
 
     size_t half_cap = v->capacity / 2;
     v = v->size < half_cap ? vector_client_resize(v, half_cap) : v;
-    // pthread_mutex_unlock(&vetcor_mutex);
+
     return v;
 }

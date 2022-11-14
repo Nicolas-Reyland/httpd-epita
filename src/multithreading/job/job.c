@@ -103,16 +103,6 @@ void execute_process_job(struct job job)
         return;
     }
 
-    // lock vector containing client (which is locked)
-    if (lock_vector_containing_locked_client(client) == -1)
-    {
-        log_error("[%d] %s(lock vector client): failed to lock vector "
-                  "associated to %d\n",
-                  pthread_self(), __func__, job.socket_fd);
-        release_client(client);
-        return;
-    }
-
     // work
     bool alive;
     size_t data_len;
@@ -124,6 +114,7 @@ void execute_process_job(struct job job)
         // close the connection now : why bother adding the task to another
         // thread ? the client is already locked, so let's do it now
 
+        struct vhost *vhost = client->vhost;
         if (lock_vector_containing_locked_client(client) == -1)
         {
             log_warn("[%d] %s: locking vetor failed. manually adding close job "
@@ -137,30 +128,28 @@ void execute_process_job(struct job job)
             add_job_to_queue(close_job);
         }
         else
+        {
+            log_debug("[%d] %s: (job uid = %zu) loced vector for client %d\n",
+                      pthread_self(), __func__, job.uid, job.socket_fd);
+
             close_connection(client);
+            int error;
+            if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
+                log_error("[%d] %s(manual close unlock vector, ignore): %s\n",
+                          pthread_self(), __func__, strerror(error));
+        }
     }
     else
     {
         process_data(client, data, data_len);
         free(data);
-    }
 
-    // unlock client and return
-    struct vhost *vhost = client->vhost;
-    release_client(client);
+        // unlock client and return
+        release_client(client);
+    }
 
     log_debug("[%d] Finished process job (uid = %zu)\n", pthread_self(),
               job.uid);
-
-    // unlock vector
-    {
-        int error;
-        if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
-        {
-            log_error("[%d] %s(unlock clients vector, ignored): %s\n",
-                      pthread_self(), __func__, strerror(error));
-        }
-    }
 }
 
 void execute_close_job(struct job job)

@@ -83,7 +83,7 @@ struct response *parsing_http(char *request_raw, size_t size,
                               struct vhost *vhost, ssize_t index)
 {
     int err = 200;
-    struct request *req = parser_request(request_raw, size, &err, index);
+    struct request *req = parser_request(request_raw, size, &err, vhost);
     log_request(vhost, req, &err, index);
 
     if (err != 200)

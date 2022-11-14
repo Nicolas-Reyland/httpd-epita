@@ -5,6 +5,7 @@
 #include <sys/types.h>
 
 #include "utils/hash_map/hash_map.h"
+#include "network/vhost.h"
 
 struct request
 {
@@ -18,7 +19,7 @@ struct request
 };
 
 struct request *parser_request(char *raw_request, size_t size, int(*err),
-                               ssize_t index);
+                               struct vhost *vhost);
 void free_request(struct request *req);
 
 #endif /* !PARSER_REQUEST_H */

@@ -7,6 +7,7 @@
 #include "utils/mem.h"
 #include "utils/parsers/error_parsing/error_parsing.h"
 #include "utils/string_utils.h"
+#include "utils/logging.h"
 
 static size_t end_token(char *request, size_t index, char *delim);
 
@@ -342,13 +343,27 @@ struct request *sub_parser_request(char *raw_request, size_t size)
  *   Function: verify if there is the options host in req->options
  *              in case of error, set the *err and return the error number
  */
-static int not_contain_host(struct hash_map *hash_map, int(*err))
+static int not_contain_host(struct hash_map *hash_map, int(*err), struct vhost *vhost)
 {
-    char *key = hash_map_get(hash_map, "Host");
-    if(key)
+    if(!vhost)
     {
+        return 403;
+    }
+    char *value_request = hash_map_get(hash_map, "Host"); // if host is in the request
+    char *ip_server = hash_map_get(vhost->map, "ip");
+    char *port_server = hash_map_get(vhost->map, "port");
+    log_error("len str = %zu\n", strlen(ip_server));
+    char *res = malloc(strlen(ip_server)+1);
+    res = strcpy(res, ip_server);
+    res = realloc(res, strlen(res) + strlen(port_server) + 1 + 1);//'\0' + ':'
+    strcat(res, ":");
+    strcat(res, port_server);
+    if(value_request && strcmp(value_request, res) == 0)
+    {
+        free(res);
         return 0;
     }
+    free(res);
     *err = HOST_ERR;
     return HOST_ERR;
 }
@@ -391,7 +406,7 @@ static int is_not_method_allowed(char *method, int(*err))
  *              sets the *err pointer to the number of the error
  */
 struct request *parser_request(char *raw_request, size_t size, int(*err),
-                               ssize_t index)
+                               struct vhost *vhost)
 {
     struct request *req = sub_parser_request(raw_request, size);
     if (!req)
@@ -399,11 +414,11 @@ struct request *parser_request(char *raw_request, size_t size, int(*err),
         *err = REQUEST_ERR;
         return NULL;
     }
-    req->index = index;
+    //req->index = index;
 
     if (is_not_method_allowed(req->method, err)
         || is_not_protocol_valid(req->version, err)
-        || not_contain_host(req->hash_map, err))
+        || not_contain_host(req->hash_map, err, vhost))
     {
         return req;
     }

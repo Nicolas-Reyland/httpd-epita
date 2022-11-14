@@ -108,7 +108,7 @@ Test(ParseRequest, test_no_CRLFCRLF_err, 0)
     cr_assert(err == 400);
 }
 
-Test(ParseRequest, test_no_host)
+/*Test(ParseRequest, test_no_host)
 {
     char req_string[] = "GET /path/script.cgi?field1=value1&field2=value2 "
                         "H\0\0\0TTP/1.1\r\n"
@@ -121,7 +121,7 @@ Test(ParseRequest, test_no_host)
     struct request *req = parser_request(req_string, size, &err, 0);
     free_request(req);
     cr_assert(err == 400);
-}
+}*/
 
 Test(ParseRequest, test_protocol_false)
 {

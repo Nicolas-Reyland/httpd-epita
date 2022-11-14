@@ -95,14 +95,14 @@ struct vector_client *vector_client_resize(struct vector_client *v, size_t n)
 {
     if (v == NULL)
     {
-        log_warn("[%d] %s: v is NULL in resize\n", pthread_self(), __func__);
+        log_warn("[%u] %s: v is NULL in resize\n", pthread_self(), __func__);
         return NULL;
     }
 
     v->data = realloc(v->data, (v->capacity = n) * sizeof(struct client *));
     if (v->data == NULL)
     {
-        log_error("[%d] %s: Out of memory\n", pthread_self(), __func__);
+        log_error("[%u] %s: Out of memory\n", pthread_self(), __func__);
         return NULL;
     }
 
@@ -132,12 +132,12 @@ bool vector_client_valid_index(struct vector_client *v, ssize_t index)
 struct vector_client *vector_client_append(struct vector_client *v,
                                            struct client *client)
 {
-    log_debug("[%d] %s: Adding client %d to v\n", pthread_self(), __func__,
+    log_debug("[%u] %s: Adding client %d to v\n", pthread_self(), __func__,
               client->socket_fd);
 
     if (v == NULL)
     {
-        log_error("[%d] %s: vector is NULL\n", pthread_self(), __func__);
+        log_error("[%u] %s: vector is NULL\n", pthread_self(), __func__);
         destroy_client(client, true);
         return NULL;
     }
@@ -186,7 +186,7 @@ struct vector_client *vector_client_remove(struct client *client)
     {
         int error;
         if ((error = lock_mutex_wrapper(&v->data[last_index]->mutex)))
-            log_error("[%d] %s(lock last mutex, continue): %s\n",
+            log_error("[%u] %s(lock last mutex, continue): %s\n",
                       pthread_self(), __func__, strerror(error));
         else
         {
@@ -196,7 +196,7 @@ struct vector_client *vector_client_remove(struct client *client)
             --v->size;
 
             if ((error = pthread_mutex_unlock(&v->data[index]->mutex)))
-                log_error("[%d] %s(unlock last mutex, ignore): %s\n",
+                log_error("[%u] %s(unlock last mutex, ignore): %s\n",
                           pthread_self(), __func__, strerror(error));
         }
     }

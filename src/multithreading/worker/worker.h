@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 
-void start_worker(void);
+void start_worker(int socket_fd);
 
 void wait_for_workers(void);
 

@@ -84,14 +84,24 @@ _Noreturn void graceful_shutdown(void)
                   strerror(errno));
 
     // Destroy job queue in a thread-safe way
-    if ((error = lock_mutex_wrapper(&g_state.job_queue_mutex)))
-        log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
-    queue_destroy(g_state.job_queue);
-    g_state.job_queue = NULL;
-    if ((error = pthread_mutex_unlock(&g_state.job_queue_mutex)))
-        log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
-    if ((error = pthread_mutex_destroy(&g_state.job_queue_mutex)))
-        log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
+    for (size_t q_index = 0; q_index < g_state.max_num_threads; ++q_index)
+    {
+        if ((error = lock_mutex_wrapper(&g_state.job_queues_mutexes[q_index])))
+            log_error("%s(lock queue, ignore): %s\n", __func__,
+                      strerror(error));
+        queue_destroy(g_state.job_queues[q_index]);
+        g_state.job_queues[q_index] = NULL;
+        if ((error =
+                 pthread_mutex_unlock(&g_state.job_queues_mutexes[q_index])))
+            log_error("%s(lock queue, ignore): %s\n", __func__,
+                      strerror(error));
+        if ((error =
+                 pthread_mutex_destroy(&g_state.job_queues_mutexes[q_index])))
+            log_error("%s(lock queue, ignore): %s\n", __func__,
+                      strerror(error));
+    }
+    free(g_state.job_queues_mutexes);
+    free(g_state.job_queues);
 
     exit(EXIT_SUCCESS);
 }

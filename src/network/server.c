@@ -180,7 +180,7 @@ _Noreturn void run_server(struct server_env *env)
              * already reached.
              * This might actually start multiple workers.
              */
-            start_worker();
+            start_worker(socket_fd);
 
             // Join the threads that exited since the last event
             join_terminated_workers();

@@ -21,9 +21,11 @@ struct state g_state = {
     .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
     .default_lock_timeout = 3,
     // Job queue
-    .job_queue = NULL,
-    .job_queue_mutex = PTHREAD_MUTEX_INITIALIZER,
+    .job_queues = NULL,
+    .job_queues_mutexes = NULL,
 };
+
+static int init_job_queues(void);
 
 int setup_g_state(struct server_env *env)
 {
@@ -82,23 +84,12 @@ int setup_g_state(struct server_env *env)
     }
     g_state.default_lock_timeout = 5;
 
-    // Job queue
-    g_state.job_queue = queue_init();
-    if (g_state.job_queue == NULL)
+    // Job queues
+    if (init_job_queues() == -1)
     {
-        log_error("%s(job queue init): failed to init queue\n", __func__);
         queue_destroy(g_state.terminated_workers);
         pthread_mutex_destroy(&g_state.threads_mutex);
         free(g_state.thread_ids);
-        return -1;
-    }
-
-    if (init_mutex_wrapper(&g_state.job_queue_mutex) == -1)
-    {
-        pthread_mutex_destroy(&g_state.threads_mutex);
-        free(g_state.thread_ids);
-        log_error("%s: failed to initialize mutex for job queue\n", __func__);
-        return -1;
     }
 
     return 0;
@@ -114,4 +105,34 @@ void set_g_state_logging(struct server_config *config)
     }
     char *log_value = hash_map_get(config->global, "log");
     g_state.logging = log_value == NULL ? true : strcmp(log_value, "true") == 0;
+}
+
+int init_job_queues(void)
+{
+    g_state.job_queues = malloc(g_state.max_num_threads * sizeof(struct queue));
+    g_state.job_queues_mutexes =
+        malloc(g_state.max_num_threads * sizeof(pthread_mutex_t));
+    // TODO: OOM checks
+
+    pthread_mutex_t base_mutex = PTHREAD_MUTEX_INITIALIZER;
+    for (size_t i = 0; i < g_state.max_num_threads; ++i)
+    {
+        g_state.job_queues[i] = queue_init();
+        if (g_state.job_queues[i] == NULL)
+        {
+            log_error("%s(job queue init): failed to init queue n%zu\n",
+                      __func__, i);
+            return -1;
+        }
+
+        g_state.job_queues_mutexes[i] = base_mutex;
+        if (init_mutex_wrapper(g_state.job_queues_mutexes + i) == -1)
+        {
+            log_error("%s: failed to initialize mutex for job queue n%zu\n",
+                      __func__, i);
+            return -1;
+        }
+    }
+
+    return 0;
 }

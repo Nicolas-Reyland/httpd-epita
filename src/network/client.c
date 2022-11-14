@@ -30,7 +30,7 @@ struct client *init_client(struct vhost *vhost, int socket_fd, char *ip_addr)
         {
             // pthread_mutexattr_destroy(&mutex_attr);
             FREE_SET_NULL(client);
-            log_error("[%d] %s(client mutex init): %s\n", pthread_self(),
+            log_error("[%u] %s(client mutex init): %s\n", pthread_self(),
                       __func__, strerror(error));
             return NULL;
         }
@@ -71,7 +71,7 @@ int release_client(struct client *client)
     int error;
     if ((error = pthread_mutex_unlock(&client->mutex)) != 0)
     {
-        log_error("[%d] %s(generic unlock client %d): %s\n", pthread_self(),
+        log_error("[%u] %s(generic unlock client %d): %s\n", pthread_self(),
                   __func__, client->socket_fd, strerror(error));
         return -1;
     }
@@ -96,7 +96,7 @@ void destroy_client(struct client *client, bool free_obj)
     // Close socket first
     epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client->socket_fd, NULL);
     if (close(client->socket_fd) == -1)
-        log_warn("[%d] %s(close): %s\n", pthread_self(), __func__,
+        log_warn("[%u] %s(close): %s\n", pthread_self(), __func__,
                  strerror(errno));
 
     FREE_SET_NULL(client->ip_addr);
@@ -104,10 +104,10 @@ void destroy_client(struct client *client, bool free_obj)
     {
         int error;
         if ((error = pthread_mutex_unlock(&client->mutex)))
-            log_error("[%d] %s(unlock self mutex): %s\n", pthread_self(),
+            log_error("[%u] %s(unlock self mutex): %s\n", pthread_self(),
                       __func__, strerror(error));
         if ((error = pthread_mutex_destroy(&client->mutex)))
-            log_error("[%d] %s(destroy self mutex): %s\n", pthread_self(),
+            log_error("[%u] %s(destroy self mutex): %s\n", pthread_self(),
                       __func__, strerror(error));
     }
 

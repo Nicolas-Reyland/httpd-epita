@@ -12,7 +12,11 @@ int lock_mutex_wrapper(pthread_mutex_t *mutex)
     struct timespec timeout_spec;
     clock_gettime(CLOCK_REALTIME, &timeout_spec);
     timeout_spec.tv_sec += g_state.default_lock_timeout;
-    return pthread_mutex_timedlock(mutex, &timeout_spec);
+    int status;
+    if ((status = pthread_mutex_timedlock(mutex, &timeout_spec)))
+        log_warn("Thread holding the object is [%u] !!\n",
+                 mutex->__data.__owner);
+    return status;
 #else
     return pthread_mutex_lock(mutex);
 #endif /* MUTEX_TIMED_LOCKS */
@@ -25,14 +29,14 @@ int init_mutex_wrapper(pthread_mutex_t *mutex)
     int error;
     if ((error = pthread_mutexattr_init(&mutex_attr)))
     {
-        log_error("[%d] %s(generic mutex attr init): %s\n", pthread_self(),
+        log_error("[%u] %s(generic mutex attr init): %s\n", pthread_self(),
                   __func__, strerror(error));
         return error;
     }
     if ((error =
              pthread_mutexattr_setrobust(&mutex_attr, PTHREAD_MUTEX_ROBUST)))
     {
-        log_error("[%d] %s(generic mutex attr setrobust): %s\n", pthread_self(),
+        log_error("[%u] %s(generic mutex attr setrobust): %s\n", pthread_self(),
                   __func__, strerror(error));
         return error;
     }

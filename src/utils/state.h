@@ -37,9 +37,9 @@ struct state
     struct queue *terminated_workers;
     pthread_mutex_t threads_mutex;
     int default_lock_timeout;
-    // Job queue
-    struct queue *job_queue;
-    pthread_mutex_t job_queue_mutex;
+    // Job queues
+    struct queue **job_queues;
+    pthread_mutex_t *job_queues_mutexes;
 };
 
 int setup_g_state(struct server_env *env);

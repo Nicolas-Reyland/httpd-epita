@@ -57,7 +57,7 @@ void register_connection(int host_socket_fd)
                         NI_NUMERICHOST | NI_NUMERICSERV)
             == 0)
         {
-            log_info("[%d] Accepted connection on descriptor %d @ %s:%s\n",
+            log_info("[%u] Accepted connection on descriptor %d @ %s:%s\n",
                      pthread_self(), client_socket_fd, host_buffer,
                      port_buffer);
         }
@@ -90,7 +90,7 @@ void register_connection(int host_socket_fd)
         if (new_client == NULL)
         {
             CLOSE_ALL(client_socket_fd);
-            log_error("[%d] %s(init client): failed to initialize client\n",
+            log_error("[%u] %s(init client): failed to initialize client\n",
                       pthread_self(), __func__);
             continue;
         }
@@ -100,14 +100,14 @@ void register_connection(int host_socket_fd)
             int error;
             if ((error = lock_mutex_wrapper(&vhost->clients_mutex)))
             {
-                log_error("[%d] %s(clients lock): %s\n", pthread_self(),
+                log_error("[%u] %s(clients lock): %s\n", pthread_self(),
                           __func__, strerror(error));
                 destroy_client(new_client, true);
                 continue;
             }
             vector_client_append(vhost->clients, new_client);
             if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
-                log_error("[%d] %s(clients unlock, ignored): %s\n",
+                log_error("[%u] %s(clients unlock, ignored): %s\n",
                           pthread_self(), __func__, strerror(error));
         }
     }
@@ -135,7 +135,7 @@ struct client *client_from_client_socket(int socket_fd, bool wait)
             int error;
             if ((error = lock_mutex_wrapper(&vhost->clients_mutex)))
             {
-                log_error("[%d] %s(lock clients vector, continue): %s\n",
+                log_error("[%u] %s(lock clients vector, continue): %s\n",
                           pthread_self(), __func__, strerror(error));
                 continue;
             }
@@ -145,7 +145,7 @@ struct client *client_from_client_socket(int socket_fd, bool wait)
         {
             int error;
             if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
-                log_error("[%d] %s(unlock clients vector, ignore): %s\n",
+                log_error("[%u] %s(unlock clients vector, ignore): %s\n",
                           pthread_self(), __func__, strerror(error));
         }
         if (client != NULL)
@@ -169,7 +169,7 @@ void process_data(struct client *client, char *data, size_t size)
         return;
     }
 
-    log_info("[%d] Processing data for %d\n", pthread_self(),
+    log_info("[%u] Processing data for %d\n", pthread_self(),
              client->socket_fd);
 
     // Attention ! Does not print anything after the first 0 byte
@@ -204,7 +204,7 @@ ssize_t incoming_connection(int client_socket_fd)
  */
 void close_connection(struct client *client)
 {
-    log_info("[%d] Closing connection with %d\n", pthread_self(),
+    log_info("[%u] Closing connection with %d\n", pthread_self(),
              client->socket_fd);
     // Remove (deregister) the file descriptor
     epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client->socket_fd, NULL);

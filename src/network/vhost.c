@@ -4,6 +4,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
+#include "multithreading/mutex_wrappers.h"
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
@@ -46,7 +47,7 @@ int init_vhost(struct hash_map *map, struct vhost *vhost)
 
     {
         int error;
-        if ((error = pthread_mutex_init(&vhost->clients_mutex, NULL)))
+        if ((error = init_mutex_wrapper(&vhost->clients_mutex)))
         {
             log_error("%s(clients mutex init); %s\n", __func__,
                       strerror(error));

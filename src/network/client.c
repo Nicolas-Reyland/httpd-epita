@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 
+#include "multithreading/mutex_wrappers.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/state.h"
@@ -23,25 +24,9 @@ struct client *init_client(struct vhost *vhost, int socket_fd, char *ip_addr)
     }
 
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutexattr_t mutex_attr;
     {
         int error;
-        if ((error = pthread_mutexattr_init(&mutex_attr)))
-        {
-            FREE_SET_NULL(client);
-            log_error("[%d] %s(client mutex attr init): %s\n", pthread_self(),
-                      __func__, strerror(error));
-            return NULL;
-        }
-        if ((error = pthread_mutexattr_setrobust(&mutex_attr,
-                                                 PTHREAD_MUTEX_ROBUST)))
-        {
-            FREE_SET_NULL(client);
-            log_error("[%d] %s(client mutex attr setrobust): %s\n",
-                      pthread_self(), __func__, strerror(error));
-            return NULL;
-        }
-        if ((error = pthread_mutex_init(&mutex, &mutex_attr)))
+        if ((error = init_mutex_wrapper(&mutex)))
         {
             // pthread_mutexattr_destroy(&mutex_attr);
             FREE_SET_NULL(client);
@@ -67,7 +52,7 @@ struct client *retrieve_client(struct vhost *vhost, ssize_t index)
 
     {
         int error;
-        if ((error = pthread_mutex_lock(&vhost->clients->data[index]->mutex)))
+        if ((error = lock_mutex_wrapper(&vhost->clients->data[index]->mutex)))
         {
             log_error("Unable to lock mutex (%s) for client at index %ld in "
                       "vhost %s\n",

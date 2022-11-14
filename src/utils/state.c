@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "multithreading/mutex_wrappers.h"
 #include "process/sig_handlers.h"
 #include "utils/hash_map/hash_map.h"
 
@@ -18,7 +19,7 @@ struct state g_state = {
     .thread_ids = NULL,
     .terminated_workers = NULL,
     .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
-    .default_lock_timeout = { .tv_sec = 5, .tv_nsec = 0, },
+    .default_lock_timeout = 3,
     // Job queue
     .job_queue = NULL,
     .job_queue_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -50,7 +51,7 @@ int setup_g_state(struct server_env *env)
     g_state.max_num_threads = NUM_THREADS;
     {
         int error;
-        if ((error = pthread_mutex_init(&g_state.threads_mutex, NULL)))
+        if ((error = init_mutex_wrapper(&g_state.threads_mutex)))
         {
             log_error("%s(threads mutex init): %s\n", __func__,
                       strerror(error));
@@ -79,8 +80,7 @@ int setup_g_state(struct server_env *env)
         free(g_state.thread_ids);
         return -1;
     }
-    g_state.default_lock_timeout.tv_sec = 5;
-    g_state.default_lock_timeout.tv_nsec = 0;
+    g_state.default_lock_timeout = 5;
 
     // Job queue
     g_state.job_queue = queue_init();
@@ -93,7 +93,7 @@ int setup_g_state(struct server_env *env)
         return -1;
     }
 
-    if (pthread_mutex_init(&g_state.job_queue_mutex, NULL) == -1)
+    if (init_mutex_wrapper(&g_state.job_queue_mutex) == -1)
     {
         pthread_mutex_destroy(&g_state.threads_mutex);
         free(g_state.thread_ids);

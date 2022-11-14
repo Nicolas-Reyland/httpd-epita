@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "multithreading/mutex_wrappers.h"
 #include "multithreading/write_response.h"
 #include "network/client.h"
 #include "network/vhost.h"
@@ -97,7 +98,7 @@ void register_connection(int host_socket_fd)
         // lock clients vector
         {
             int error;
-            if ((error = pthread_mutex_lock(&vhost->clients_mutex)))
+            if ((error = lock_mutex_wrapper(&vhost->clients_mutex)))
             {
                 log_error("[%d] %s(clients lock): %s\n", pthread_self(),
                           __func__, strerror(error));
@@ -107,7 +108,7 @@ void register_connection(int host_socket_fd)
             vector_client_append(vhost->clients, new_client);
             if ((error = pthread_mutex_unlock(&vhost->clients_mutex)))
                 log_error("[%d] %s(clients unlock, ignored): %s\n",
-                          pthread_self(), strerror(error));
+                          pthread_self(), __func__, strerror(error));
         }
     }
 }
@@ -132,7 +133,7 @@ struct client *client_from_client_socket(int socket_fd, bool wait)
         // lock the vector
         {
             int error;
-            if ((error = pthread_mutex_lock(&vhost->clients_mutex)))
+            if ((error = lock_mutex_wrapper(&vhost->clients_mutex)))
             {
                 log_error("[%d] %s(lock clients vector, continue): %s\n",
                           pthread_self(), __func__, strerror(error));

@@ -5,6 +5,7 @@
 #include <sys/types.h>
 
 #include "multithreading/job/job.h"
+#include "multithreading/mutex_wrappers.h"
 #include "utils/logging.h"
 #include "utils/state.h"
 
@@ -92,7 +93,7 @@ void start_worker(void)
 static ssize_t get_num_active_threads(bool keep_lock)
 {
     int error;
-    if ((error = pthread_mutex_lock(&g_state.threads_mutex)))
+    if ((error = lock_mutex_wrapper(&g_state.threads_mutex)))
     {
         log_error("%s(threads lock): %s\n", __func__, strerror(error));
         return -1;
@@ -176,7 +177,7 @@ static void *worker_start_routine(void *ptr)
 static struct job *get_next_job(void)
 {
     int error;
-    if ((error = pthread_mutex_lock(&g_state.job_queue_mutex)))
+    if ((error = lock_mutex_wrapper(&g_state.job_queue_mutex)))
     {
         log_error("[%d] %s(job queue lock): %s\n", pthread_self(), __func__,
                   strerror(error));

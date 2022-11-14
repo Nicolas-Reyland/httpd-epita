@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "multithreading/mutex_wrappers.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
 #include "utils/state.h"
@@ -69,7 +70,7 @@ struct client *vector_client_find(struct vector_client *v, int socket_fd,
     // Decide on which lock function to use (blocking or nonblocking)
     int (*lock_function)(pthread_mutex_t *) = NULL;
     if (wait)
-        lock_function = pthread_mutex_lock;
+        lock_function = lock_mutex_wrapper;
     else
         lock_function = pthread_mutex_trylock;
 
@@ -184,7 +185,7 @@ struct vector_client *vector_client_remove(struct client *client)
     if (uindex != last_index && v->data[last_index] != NULL)
     {
         int error;
-        if ((error = pthread_mutex_lock(&v->data[last_index]->mutex)))
+        if ((error = lock_mutex_wrapper(&v->data[last_index]->mutex)))
             log_error("[%d] %s(lock last mutex, continue): %s\n",
                       pthread_self(), __func__, strerror(error));
         else

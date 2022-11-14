@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "multithreading/mutex_wrappers.h"
 #include "network/server_env.h"
 #include "network/vhost.h"
 #include "utils/logging.h"
@@ -54,7 +55,7 @@ _Noreturn void graceful_shutdown(void)
 
     // Join all the active threads
     int error;
-    if ((error = pthread_mutex_lock(&g_state.threads_mutex)))
+    if ((error = lock_mutex_wrapper(&g_state.threads_mutex)))
         log_error("%s(lock num_active_threads, continue): %s\n", __func__,
                   strerror(error));
     else
@@ -83,7 +84,7 @@ _Noreturn void graceful_shutdown(void)
                   strerror(errno));
 
     // Destroy job queue in a thread-safe way
-    if ((error = pthread_mutex_lock(&g_state.job_queue_mutex)))
+    if ((error = lock_mutex_wrapper(&g_state.job_queue_mutex)))
         log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
     queue_destroy(g_state.job_queue);
     g_state.job_queue = NULL;

@@ -69,11 +69,22 @@ int setup_g_state(struct server_env *env)
         log_error("%s: Out of memory (thread_ids)\n", __func__);
         return -1;
     }
+    g_state.terminated_workers = queue_init();
+    if (g_state.terminated_workers == NULL)
+    {
+        log_error("%s(terminated workers queue init): failed to init queue\n",
+                  __func__);
+        pthread_mutex_destroy(&g_state.threads_mutex);
+        free(g_state.thread_ids);
+        return -1;
+    }
 
     // Job queue
     g_state.job_queue = queue_init();
     if (g_state.job_queue == NULL)
     {
+        log_error("%s(job queue init): failed to init queue\n", __func__);
+        queue_destroy(g_state.terminated_workers);
         pthread_mutex_destroy(&g_state.threads_mutex);
         free(g_state.thread_ids);
         return -1;

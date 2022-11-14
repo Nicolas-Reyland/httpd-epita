@@ -23,13 +23,29 @@ struct client *init_client(struct vhost *vhost, int socket_fd, char *ip_addr)
     }
 
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-    // Scope the 'error' variable
+    pthread_mutexattr_t mutex_attr;
     {
         int error;
-        if ((error = pthread_mutex_init(&mutex, NULL)))
+        if ((error = pthread_mutexattr_init(&mutex_attr)))
         {
             FREE_SET_NULL(client);
-            log_error("[%d] %s(pthread_mutex_init): %s\n", pthread_self(),
+            log_error("[%d] %s(client mutex attr init): %s\n", pthread_self(),
+                      __func__, strerror(error));
+            return NULL;
+        }
+        if ((error = pthread_mutexattr_setrobust(&mutex_attr,
+                                                 PTHREAD_MUTEX_ROBUST)))
+        {
+            FREE_SET_NULL(client);
+            log_error("[%d] %s(client mutex attr setrobust): %s\n",
+                      pthread_self(), __func__, strerror(error));
+            return NULL;
+        }
+        if ((error = pthread_mutex_init(&mutex, &mutex_attr)))
+        {
+            // pthread_mutexattr_destroy(&mutex_attr);
+            FREE_SET_NULL(client);
+            log_error("[%d] %s(client mutex init): %s\n", pthread_self(),
                       __func__, strerror(error));
             return NULL;
         }

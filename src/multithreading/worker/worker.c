@@ -121,6 +121,7 @@ static void *worker_start_routine(void *ptr)
     size_t thread_id_index = *thread_id_index_ptr;
     free(ptr);
 
+    // Execute jobs while there are some left
     while (1)
     {
         struct job *job = get_next_job();
@@ -132,7 +133,7 @@ static void *worker_start_routine(void *ptr)
 
     log_info("[%d] %s: no jobs left. exiting.\n", pthread_self(), __func__);
 
-    // Decrement the num_active_threads
+    // Lock thread-managing structures
     ssize_t num_active = get_num_active_threads(true);
     if (num_active == -1)
     {
@@ -142,26 +143,32 @@ static void *worker_start_routine(void *ptr)
             pthread_self(), __func__);
         pthread_exit(NULL);
     }
-    /*
-    pthread_t *self_thread_id = malloc(sizeof(pthread_t));
-    if (self_thread_id == NULL)
-    {
-        ...
-    }
-    queue_push(g_state.thread_queue, self_thread_id);
-    */
+
+    // Clean up thread
     log_debug("%s: cleaning up thread [%zu: %d]\n", __func__, thread_id_index,
               pthread_self());
+    // Add self thread id for later joining in the main thread
+    pthread_t *self_thread_id = malloc(sizeof(pthread_t));
+    if (self_thread_id == NULL)
+        log_error("%s(self thread id): Out of memory\n");
+    else
+    {
+        *self_thread_id = pthread_self();
+        queue_push(g_state.terminated_workers, self_thread_id);
+    }
+    // Make fere space for later new threads
     g_state.thread_ids[thread_id_index] = 0;
     --g_state.num_active_threads;
+
+    // Unlock thread-managing structures
     {
         int error;
         if ((error = pthread_mutex_unlock(&g_state.threads_mutex)))
             log_error("[%d] %s(num_active_threads unlock): %s\n",
                       pthread_self(), __func__, strerror(error));
-        log_debug("[%d] %s: finished work. exiting\n", pthread_self(),
-                  __func__);
     }
+
+    log_debug("[%d] %s: finished work. exiting\n", pthread_self(), __func__);
 
     return NULL;
 }
@@ -173,9 +180,17 @@ static struct job *get_next_job(void)
     {
         log_error("[%d] %s(job queue lock): %s\n", pthread_self(), __func__,
                   strerror(error));
-        // TODO: don't want infinite recursion, but kinda want to call
-        // 'worker_start_routine' again ...
-        pthread_exit(NULL);
+        /*
+         * TODO: fix this
+         *
+         * If all threads fail to lock at the same time, they will all exit.
+         * There might still be jobs in the job queue tho, so they might
+         * not get executed until the next epoll event...
+         *
+         * We should actualy restart the thread in some way
+         *
+         */
+        return NULL;
     }
 
     struct job *job = queue_pop(g_state.job_queue);

@@ -21,4 +21,6 @@ void add_job_to_queue(struct job *job);
 
 void execute_job(struct job *job);
 
+void join_terminated_workers(void);
+
 #endif /* !JOB_H */

@@ -114,17 +114,18 @@ _Noreturn void run_server(struct server_env *env)
             epoll_wait(env->epoll_fd, env->events, EPOLL_MAXEVENTS, -1);
         log_debug("%s: epoll notified on %d event(s)\n", __func__, num_events);
 
-        struct job *cur_job = malloc(sizeof(struct job));
-        if (cur_job == NULL)
-        {
-            // TODO: set a variable in g_state to the exit state we want
-            log_error("%s(current job): Out of memory\n", __func__);
-            break;
-        }
-
         for (int i = 0; i < num_events; ++i)
         {
+            struct job *cur_job = malloc(sizeof(struct job));
+            if (cur_job == NULL)
+            {
+                // TODO: set a variable in g_state to the exit state we want
+                log_error("%s(current job): Out of memory\n", __func__);
+                break;
+            }
+            cur_job->type = JOB_IDLE;
             ssize_t index = -1;
+
             // Error has occured on file descriptor, or client closed connection
             int socket_fd = env->events[i].data.fd;
             if (env->events[i].events & (EPOLLHUP | EPOLLERR))
@@ -174,9 +175,15 @@ _Noreturn void run_server(struct server_env *env)
             // Add newly created job to job queue
             add_job_to_queue(cur_job);
 
-            // A worker is only start if the number of active threads is not
-            // already reached
+            /*
+             * A worker is only start if the number of active threads is not
+             * already reached.
+             * This might actually start multiple workers.
+             */
             start_worker();
+
+            // Join the threads that exited since the last event
+            join_terminated_workers();
         }
     }
 

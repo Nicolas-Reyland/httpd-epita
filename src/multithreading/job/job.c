@@ -246,3 +246,37 @@ int lock_vector_containing_locked_client(struct client *client)
 
     return 0;
 }
+
+void join_terminated_workers(void)
+{
+    {
+        int error;
+        if ((error = pthread_mutex_lock(&g_state.threads_mutex)))
+        {
+            log_error("%s(lock threads mutex): %s\n", __func__,
+                      strerror(error));
+            return;
+        }
+    }
+
+    pthread_t *thread_id;
+    while ((thread_id = queue_pop(g_state.terminated_workers)) != NULL)
+    {
+        log_info("%s: Joining thread %d\n", __func__, *thread_id);
+        pthread_join(*thread_id, NULL);
+        free(thread_id);
+        thread_id = NULL;
+    }
+
+    {
+        int error;
+        if ((error = pthread_mutex_unlock(&g_state.threads_mutex)))
+        {
+            log_error("%s(unlock threads mutex): %s\n", __func__,
+                      strerror(error));
+            return;
+        }
+    }
+
+    log_debug("%s: Done joining terminated workers\n", __func__);
+}

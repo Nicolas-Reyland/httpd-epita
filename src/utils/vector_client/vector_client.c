@@ -5,6 +5,7 @@
 
 #include "utils/logging.h"
 #include "utils/mem.h"
+#include "utils/state.h"
 
 static struct vector_client *vector_client_resize(struct vector_client *v,
                                                   size_t n);

@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "network/server_env.h"
 #include "utils/logging.h"
@@ -36,6 +37,7 @@ struct state
     size_t num_active_threads;
     struct queue *terminated_workers;
     pthread_mutex_t threads_mutex;
+    struct timespec default_lock_timeout;
     // Job queue
     struct queue *job_queue;
     pthread_mutex_t job_queue_mutex;

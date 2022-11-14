@@ -18,6 +18,7 @@ struct state g_state = {
     .thread_ids = NULL,
     .terminated_workers = NULL,
     .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
+    .default_lock_timeout = { .tv_sec = 5, .tv_nsec = 0, },
     // Job queue
     .job_queue = NULL,
     .job_queue_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -78,6 +79,8 @@ int setup_g_state(struct server_env *env)
         free(g_state.thread_ids);
         return -1;
     }
+    g_state.default_lock_timeout.tv_sec = 5;
+    g_state.default_lock_timeout.tv_nsec = 0;
 
     // Job queue
     g_state.job_queue = queue_init();

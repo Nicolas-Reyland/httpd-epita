@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "multithreading/job/job.h"
 #include "multithreading/worker/worker.h"
 #include "network/socket_handler.h"
 #include "network/vhost.h"
@@ -112,6 +113,15 @@ _Noreturn void run_server(struct server_env *env)
         int num_events =
             epoll_wait(env->epoll_fd, env->events, EPOLL_MAXEVENTS, -1);
         log_debug("%s: epoll notified on %d event(s)\n", __func__, num_events);
+
+        struct job *cur_job = malloc(sizeof(struct job));
+        if (cur_job == NULL)
+        {
+            // TODO: set a variable in g_state to the exit state we want
+            log_error("%s(current job): Out of memory\n", __func__);
+            break;
+        }
+
         for (int i = 0; i < num_events; ++i)
         {
             ssize_t index = -1;
@@ -126,7 +136,7 @@ _Noreturn void run_server(struct server_env *env)
                     .socket_fd = socket_fd,
                     .index = index,
                 };
-                add_job_to_queue(close_job);
+                *cur_job = close_job;
                 // close_connection(env, socket_fd);
             }
             // File not available for reading, so just skipping it
@@ -134,6 +144,7 @@ _Noreturn void run_server(struct server_env *env)
             {
                 log_debug("%s: epoll made an unnecessary notification\n",
                           __func__);
+                free(cur_job);
                 // maybe log to see why we were notified ?
                 continue;
             }
@@ -146,7 +157,7 @@ _Noreturn void run_server(struct server_env *env)
                     .socket_fd = socket_fd,
                     .index = index,
                 };
-                add_job_to_queue(accept_job);
+                *cur_job = accept_job;
                 // register_connection(env, socket_fd);
             }
             // There is data to be read
@@ -157,8 +168,11 @@ _Noreturn void run_server(struct server_env *env)
                     .socket_fd = socket_fd,
                     .index = index,
                 };
-                add_job_to_queue(process_job);
+                *cur_job = process_job;
             }
+
+            // Add newly created job to job queue
+            add_job_to_queue(cur_job);
 
             // A worker is only start if the number of active threads is not
             // already reached
@@ -166,10 +180,7 @@ _Noreturn void run_server(struct server_env *env)
         }
     }
 
-    // clean up
-    free_server_env(env, true, true);
-
-    exit(EXIT_SUCCESS);
+    graceful_shutdown();
 }
 
 /*

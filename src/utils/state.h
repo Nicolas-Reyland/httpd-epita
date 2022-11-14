@@ -5,10 +5,10 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "multithreading/job/job_queue.h"
 #include "network/server_env.h"
 #include "utils/logging.h"
 #include "utils/parsers/config/config_parser.h"
+#include "utils/queue/queue.h"
 
 #ifndef LOG_LEVEL
 #    define LOG_LEVEL LOG_EPITA
@@ -34,10 +34,11 @@ struct state
     size_t max_num_threads;
     pthread_t *thread_ids;
     size_t num_active_threads;
+    struct queue *terminated_workers;
     pthread_mutex_t threads_mutex;
     // Job queue
-    struct job_queue *job_queue;
-    pthread_mutex_t queue_mutex;
+    struct queue *job_queue;
+    pthread_mutex_t job_queue_mutex;
 };
 
 int setup_g_state(struct server_env *env);

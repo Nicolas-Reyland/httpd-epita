@@ -83,13 +83,13 @@ _Noreturn void graceful_shutdown(void)
                   strerror(errno));
 
     // Destroy job queue in a thread-safe way
-    if ((error = pthread_mutex_lock(&g_state.queue_mutex)))
+    if ((error = pthread_mutex_lock(&g_state.job_queue_mutex)))
         log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
-    job_queue_destroy(g_state.job_queue);
+    queue_destroy(g_state.job_queue);
     g_state.job_queue = NULL;
-    if ((error = pthread_mutex_unlock(&g_state.queue_mutex)))
+    if ((error = pthread_mutex_unlock(&g_state.job_queue_mutex)))
         log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
-    if ((error = pthread_mutex_destroy(&g_state.queue_mutex)))
+    if ((error = pthread_mutex_destroy(&g_state.job_queue_mutex)))
         log_error("%s(lock queue, ignore): %s\n", __func__, strerror(error));
 
     exit(EXIT_SUCCESS);

@@ -9,31 +9,38 @@
 #include "utils/socket_utils.h"
 #include "utils/state.h"
 
-void add_job_to_queue(struct job job)
+void add_job_to_queue(struct job *job)
 {
     static size_t job_uid = 1;
-    job.uid = job_uid++;
+
+    if (job == NULL)
+    {
+        log_warn("%s: trying to push nulll job to queue ? push cancelled\n",
+                 __func__);
+        return;
+    }
+    job->uid = job_uid++;
 
     log_debug("Adding job {type = %d, socket_fd = %d, index = %zd, uid = %zu} "
               "to queue\n",
-              job.type, job.socket_fd, job.index, job.uid);
+              job->type, job->socket_fd, job->index, job->uid);
 
     {
         int error;
-        if ((error = pthread_mutex_lock(&g_state.queue_mutex)))
+        if ((error = pthread_mutex_lock(&g_state.job_queue_mutex)))
         {
             log_error("%s(lock job queue): %s\n", __func__, strerror(error));
             return;
         }
     }
 
-    if (job.type == JOB_IDLE)
+    if (job->type == JOB_IDLE)
         log_warn("%s: pushing idle job (uid = %zu) to queue\n", __func__,
-                 job.uid);
+                 job->uid);
 
-    if (job_queue_push(g_state.job_queue, job) == -1)
+    if (queue_push(g_state.job_queue, job) == -1)
         log_error("%s: failed to push job of type %d to queue\n", __func__,
-                  job.type);
+                  job->type);
 
     if (g_state.job_queue->size == 1)
         log_debug("%s: there is 1 job waiting in queue\n", __func__);
@@ -43,7 +50,7 @@ void add_job_to_queue(struct job job)
 
     {
         int error;
-        if ((error = pthread_mutex_unlock(&g_state.queue_mutex)))
+        if ((error = pthread_mutex_unlock(&g_state.job_queue_mutex)))
         {
             log_error("%s(unlock job queue): %s\n", __func__, strerror(error));
             return;
@@ -51,17 +58,17 @@ void add_job_to_queue(struct job job)
     }
 }
 
-static void execute_accept_job(struct job job);
+static void execute_accept_job(struct job *job);
 
-static void execute_process_job(struct job job);
+static void execute_process_job(struct job *job);
 
-static void execute_close_job(struct job job);
+static void execute_close_job(struct job *job);
 
-void execute_job(struct job job)
+void execute_job(struct job *job)
 {
-    log_info("Executing job (uid = %zu)\n", job.uid);
+    log_info("Executing job (uid = %zu)\n", job->uid);
 
-    switch (job.type)
+    switch (job->type)
     {
     case JOB_ACCEPT:
         execute_accept_job(job);
@@ -76,30 +83,36 @@ void execute_job(struct job job)
         log_warn("%s: idle job passed down to execution\n", __func__);
         break;
     default:
-        log_warn("%s: unkown job type %d\n", __func__, job.type);
+        log_warn("%s: unkown job type %d\n", __func__, job->type);
         break;
     }
 }
 
-void execute_accept_job(struct job job)
+void execute_accept_job(struct job *job)
 {
-    log_debug("Executing access job (uid = %zu)\n", job.uid);
-    register_connection(job.socket_fd);
+    log_debug("Executing access job (uid = %zu)\n", job->uid);
+    register_connection(job->socket_fd);
+
+    free(job);
+    job = NULL;
 }
 
 static int lock_vector_containing_locked_client(struct client *client);
 
-void execute_process_job(struct job job)
+void execute_process_job(struct job *job)
 {
-    log_debug("Executing process job (uid = %zu)\n", job.uid);
+    log_debug("Executing process job (uid = %zu)\n", job->uid);
 
     // should wait for vhost clients
-    struct client *client = client_from_client_socket(job.socket_fd, true);
+    struct client *client = client_from_client_socket(job->socket_fd, true);
     if (client == NULL)
     {
         log_error(
             "[%d] %s(lock client): could not find a client associated to %d\n",
-            pthread_self(), __func__, job.socket_fd);
+            pthread_self(), __func__, job->socket_fd);
+
+        free(job);
+        job = NULL;
         return;
     }
 
@@ -110,7 +123,7 @@ void execute_process_job(struct job job)
     if (!alive)
     {
         log_debug("Closing dead connection while processing job (uid = %zu)\n",
-                  job.uid);
+                  job->uid);
         // close the connection now : why bother adding the task to another
         // thread ? the client is already locked, so let's do it now
 
@@ -125,12 +138,16 @@ void execute_process_job(struct job job)
                 .socket_fd = client->socket_fd,
                 .index = client->index,
             };
-            add_job_to_queue(close_job);
+            *job = close_job;
+            add_job_to_queue(job);
+
+            log_debug("[%d] Finished (early) process job (uid = %zu)\n",
+                      pthread_self(), job->uid);
         }
         else
         {
             log_debug("[%d] %s: (job uid = %zu) loced vector for client %d\n",
-                      pthread_self(), __func__, job.uid, job.socket_fd);
+                      pthread_self(), __func__, job->uid, job->socket_fd);
 
             close_connection(client);
             int error;
@@ -149,20 +166,26 @@ void execute_process_job(struct job job)
     }
 
     log_debug("[%d] Finished process job (uid = %zu)\n", pthread_self(),
-              job.uid);
+              job->uid);
+
+    free(job);
+    job = NULL;
 }
 
-void execute_close_job(struct job job)
+void execute_close_job(struct job *job)
 {
-    log_debug("Executing close job (uid = %zu)\n", job.uid);
+    log_debug("Executing close job (uid = %zu)\n", job->uid);
 
     // lock client
-    struct client *client = client_from_client_socket(job.socket_fd, false);
+    struct client *client = client_from_client_socket(job->socket_fd, false);
     if (client == NULL)
     {
         log_error(
             "[%d] %s(lock client): could not find a client associated to %d\n",
-            pthread_self(), __func__, job.socket_fd);
+            pthread_self(), __func__, job->socket_fd);
+
+        free(job);
+        job = NULL;
         return;
     }
 
@@ -171,8 +194,11 @@ void execute_close_job(struct job job)
     {
         log_error("[%d] %s(lock vector client): failed to lock vector "
                   "associated to %d\n",
-                  pthread_self(), __func__, job.socket_fd);
+                  pthread_self(), __func__, job->socket_fd);
         release_client(client);
+
+        free(job);
+        job = NULL;
         return;
     }
 
@@ -189,6 +215,9 @@ void execute_close_job(struct job job)
                       pthread_self(), __func__, strerror(error));
         }
     }
+
+    free(job);
+    job = NULL;
 }
 
 /*

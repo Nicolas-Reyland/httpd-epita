@@ -15,11 +15,12 @@ struct state g_state = {
     // Multi-threading
     .max_num_threads = NUM_THREADS,
     .num_active_threads = 0,
-    .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
     .thread_ids = NULL,
+    .terminated_workers = NULL,
+    .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
     // Job queue
     .job_queue = NULL,
-    .queue_mutex = PTHREAD_MUTEX_INITIALIZER,
+    .job_queue_mutex = PTHREAD_MUTEX_INITIALIZER,
 };
 
 int setup_g_state(struct server_env *env)
@@ -70,7 +71,7 @@ int setup_g_state(struct server_env *env)
     }
 
     // Job queue
-    g_state.job_queue = job_queue_init();
+    g_state.job_queue = queue_init();
     if (g_state.job_queue == NULL)
     {
         pthread_mutex_destroy(&g_state.threads_mutex);
@@ -78,7 +79,7 @@ int setup_g_state(struct server_env *env)
         return -1;
     }
 
-    if (pthread_mutex_init(&g_state.queue_mutex, NULL) == -1)
+    if (pthread_mutex_init(&g_state.job_queue_mutex, NULL) == -1)
     {
         pthread_mutex_destroy(&g_state.threads_mutex);
         free(g_state.thread_ids);

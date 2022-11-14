@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "multithreading/job/job.h"
 #include "utils/logging.h"
 #include "utils/state.h"
 
@@ -53,19 +54,23 @@ void start_worker(void)
             break;
 
     int valid_thread_index = thread_id_index != g_state.max_num_threads;
-    void *thread_id_buff = NULL;
+    size_t *thread_id_index_buff = malloc(sizeof(size_t));
 
+    // Validate data
     if (!valid_thread_index)
         log_error("%s: no valid thread id found (zero). not starting worker\n",
                   __func__);
-    else if ((thread_id_buff = malloc(sizeof(size_t))) == NULL)
+    else if (thread_id_index_buff == NULL)
         log_error("%s(alloc thread id buff): Out of memory\n", __func__);
+
     // Start a new worker thread
     else
     {
+        *thread_id_index_buff = thread_id_index;
         int error;
-        if ((error = pthread_create(g_state.thread_ids + thread_id_index, NULL,
-                                    &worker_start_routine, thread_id_buff)))
+        if ((error =
+                 pthread_create(g_state.thread_ids + thread_id_index, NULL,
+                                &worker_start_routine, thread_id_index_buff)))
             log_error("%s(create thread): %s\n", __func__, strerror(error));
         else
         {
@@ -108,18 +113,20 @@ static ssize_t get_num_active_threads(bool keep_lock)
     return num_active;
 }
 
-static struct job get_next_job(void);
+static struct job *get_next_job(void);
 
 static void *worker_start_routine(void *ptr)
 {
+    size_t *thread_id_index_ptr = ptr;
+    size_t thread_id_index = *thread_id_index_ptr;
     free(ptr);
 
     while (1)
     {
-        struct job job = get_next_job();
-        log_debug("[%d] job type is %d\n", pthread_self(), job.type);
-        if (job.type == JOB_IDLE)
+        struct job *job = get_next_job();
+        if (job == NULL || job->type == JOB_IDLE)
             break;
+        log_debug("[%d] job type is %d\n", pthread_self(), job->type);
         execute_job(job);
     }
 
@@ -135,7 +142,17 @@ static void *worker_start_routine(void *ptr)
             pthread_self(), __func__);
         pthread_exit(NULL);
     }
-    // g_state.thread_ids[thread_id_index] = 0;
+    /*
+    pthread_t *self_thread_id = malloc(sizeof(pthread_t));
+    if (self_thread_id == NULL)
+    {
+        ...
+    }
+    queue_push(g_state.thread_queue, self_thread_id);
+    */
+    log_debug("%s: cleaning up thread [%zu: %d]\n", __func__, thread_id_index,
+              pthread_self());
+    g_state.thread_ids[thread_id_index] = 0;
     --g_state.num_active_threads;
     {
         int error;
@@ -149,10 +166,10 @@ static void *worker_start_routine(void *ptr)
     return NULL;
 }
 
-static struct job get_next_job(void)
+static struct job *get_next_job(void)
 {
     int error;
-    if ((error = pthread_mutex_lock(&g_state.queue_mutex)))
+    if ((error = pthread_mutex_lock(&g_state.job_queue_mutex)))
     {
         log_error("[%d] %s(job queue lock): %s\n", pthread_self(), __func__,
                   strerror(error));
@@ -161,10 +178,9 @@ static struct job get_next_job(void)
         pthread_exit(NULL);
     }
 
-    struct job job = { .type = JOB_IDLE };
-    job_queue_pop(g_state.job_queue, &job);
+    struct job *job = queue_pop(g_state.job_queue);
 
-    if ((error = pthread_mutex_unlock(&g_state.queue_mutex)))
+    if ((error = pthread_mutex_unlock(&g_state.job_queue_mutex)))
     {
         log_error("[%d] %s(job queue unlock): %s\n", pthread_self(), __func__,
                   strerror(error));

@@ -71,7 +71,7 @@ struct response *create_response(int *err, struct vhost *vhost,
     free(path);
     if (open_ressource_result == -1)
         return set_error_response(vhost, resp, &resp->err);
-
+    connexion_close_header(resp);
     // set header content len
     set_header_content_length(resp->file_len, resp);
     realloc_and_concat(resp, "\r\n", 2, false);

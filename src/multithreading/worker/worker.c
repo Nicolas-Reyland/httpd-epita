@@ -55,7 +55,7 @@ void start_worker(void)
     int valid_thread_index = thread_id_index != g_state.max_num_threads;
     void *thread_id_buff = NULL;
 
-    if (valid_thread_index)
+    if (!valid_thread_index)
         log_error("%s: no valid thread id found (zero). not starting worker\n",
                   __func__);
     else if ((thread_id_buff = malloc(sizeof(size_t))) == NULL)

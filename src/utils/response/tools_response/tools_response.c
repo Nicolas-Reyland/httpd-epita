@@ -29,11 +29,16 @@ int isDir(const char *fileName)
 int is_path_traversal_attack(char *path, struct vhost *vhost)
 {
     char *root_dir = hash_map_get(vhost->map, "root_dir");
-    char *resolved_path = malloc(PATH_MAX);
-    resolved_path = realpath(path, resolved_path);
-
-    if (strncmp(root_dir, path, strlen(root_dir)) == 0)
+    char *resolved_path_m = malloc(PATH_MAX);
+    char *resolved_path = realpath(path, resolved_path_m);
+    if (!resolved_path)
     {
+        free(resolved_path_m);
+    }
+
+    if (strncmp(root_dir, resolved_path, strlen(root_dir)) == 0)
+    {
+        log_error("HELLO\n");
         free(resolved_path);
         return 0;
     }
@@ -56,7 +61,8 @@ char *get_path_ressource(char *target, struct vhost *vhost)
     }
     char *path = malloc(strlen(root_dir) + 1);
     path = strcpy(path, root_dir);
-    path = realloc(path, strlen(path) + strlen(target) + 1);
+    path = realloc(path, strlen(path) + strlen(target) + 1 +1);
+    path = strcat(path, "/");
     path = strcat(path, target);
 
     // check if path is a directory and if it is, add the default file to the
@@ -93,21 +99,19 @@ char *get_path_ressource(char *target, struct vhost *vhost)
 int open_ressource(char *path, struct response *resp, struct vhost *vhost,
                    int open_file)
 {
-    // if we can open the file:
-    if (access(path, R_OK) == -1)
+    struct stat sb;
+    int res = stat(path, &sb);
+    if(res < 0)
     {
-        if (access(path, F_OK) == -1)
-        {
-            resp->err = 404;
-            return -1;
-        }
-        else
-        {
-            resp->err = 403;
-            return -1;
-        }
+        resp->err = 404;
+        return -1;
     }
-
+    // if we can open the file:
+    if (!S_IROTH)
+    {
+        resp->err = 403;
+        return -1;
+    }
     if (is_path_traversal_attack(path, vhost) == 1)
     {
         resp->err = 403;

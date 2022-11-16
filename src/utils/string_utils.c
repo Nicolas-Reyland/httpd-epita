@@ -164,3 +164,35 @@ int replace_substring(char **str, char *str_start, char *substr,
 
     return 0;
 }
+
+static char to_lower(char c);
+
+int my_strcasecmp(const char *s1, const char *s2)
+{
+    // null str
+    if (s1 == NULL)
+    {
+        return s2 == NULL ? 0 : to_lower(-*s2);
+    }
+    else if (s2 == NULL)
+    {
+        return to_lower(*s1);
+    }
+    // strcmp with to_lower calls
+    int diff = 0;
+    while ((diff = to_lower(*s1) - to_lower(*s2)) == 0 && *s1 != 0)
+    {
+        s1++;
+        s2++;
+    }
+    return diff;
+}
+
+static char to_lower(char c)
+{
+    if ('A' <= c && c <= 'Z')
+    {
+        return c - 'A' + 'a';
+    }
+    return c;
+}

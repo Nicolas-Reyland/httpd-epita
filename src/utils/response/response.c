@@ -29,6 +29,7 @@ struct response *init_response(void)
     response->err = 200;
     response->res = NULL;
     response->res_len = 0;
+    response->close_connection = 0;
     return response;
 }
 

@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "utils/string_utils.h"
 
 struct hash_map *hash_map_init(size_t size)
 {
@@ -111,7 +112,7 @@ char *hash_map_get(const struct hash_map *hash_map, char *key)
     {
         for (struct pair_list *list = hash_map->data[i]; list != NULL;
              list = list->next)
-            if (strcasecmp(key, list->key) == 0)
+            if (my_strcasecmp(key, list->key) == 0)
                 return list->value;
     }
 

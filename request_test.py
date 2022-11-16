@@ -80,7 +80,7 @@ def test_socket_path_attack_2():
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
-    assert response.status == 404#maybe 403
+    assert response.status == 404
 
 def test_socket_no_path_attack():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
@@ -230,11 +230,11 @@ def test_request_content_len():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GE\0T /src/\0main.c HTTP/1.1\r\nhOsT: {ip}\r\nContent-Length: 8\r\n\r\n bis\0oir".encode())
+    s.send(f"GE\0T /src/\0main.c HTTP/1.1\r\nhOsT: {ip}\r\nContent-Length: 7\r\n\r\n bis\0oir".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
-    assert response.status == 200
+    assert response.status == 400
 
 def test_request_content_len_2():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])

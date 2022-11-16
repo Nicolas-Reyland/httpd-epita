@@ -20,4 +20,6 @@ int line_is_empty(char *line);
 int replace_substring(char **str, char *str_start, char *substr,
                       char *replacement);
 
+int my_strcasecmp(const char *s1, const char *s2);
+
 #endif /* !STRING_UTILS_H */

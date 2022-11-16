@@ -12,8 +12,6 @@
 #include "utils/mem.h"
 #include "utils/parsers/config/config_parser.h"
 #include "utils/state.h"
-#include "utils/vector/vector.h"
-#include "utils/vector_str/vector_str.h"
 
 static int update_vhosts(struct server_config *new_config);
 
@@ -113,9 +111,9 @@ int update_vhosts(struct server_config *new_config)
 
     // Add the new vhosts, that were not present in the old config
     for (size_t i = 0; i < new_config->num_vhosts; ++i)
-        if (!markers[old_num_vhosts + i])
-            if (reload_add_vhost(new_config->vhosts[i]) == -1)
-                return -1;
+        if (!markers[old_num_vhosts + i]
+            && reload_add_vhost(new_config->vhosts[i]) == -1)
+            return -1;
 
     FREE_SET_NULL(new_config, new_config->vhosts, markers);
     return 0;
@@ -274,31 +272,13 @@ int reload_add_vhost(struct hash_map *new_vhost_map)
     char *vhost_port = hash_map_get(new_vhost_map, "port");
     log_debug("Adding new vhost @ %s:%s\n", vhost_ip, vhost_port);
 
-    int socket_fd = setup_socket(g_state.env->epoll_fd, vhost_ip, vhost_port);
-    if (socket_fd == -1)
-        return -1;
-
-    struct vector *clients = vector_init(VHOST_VECTOR_INIT_SIZE);
-    if (clients == NULL)
+    struct vhost new_vhost;
+    if (init_vhost(new_vhost_map, &new_vhost) == -1)
     {
-        log_error("%s: Out of memory (clients)\n", __func__);
+        log_error("%s: failed to init vhost @ %s:%s\n", __func__, vhost_ip,
+                  vhost_port);
         return -1;
     }
-    struct vector_str *client_ips = NULL;
-    if (g_state.logging
-        && (client_ips = vector_str_init(VHOST_VECTOR_INIT_SIZE)) == NULL)
-    {
-        free_vector(clients);
-        log_error("%s: Out of memory (client_ips)\n", __func__);
-        return -1;
-    }
-
-    struct vhost new_vhost = {
-        .socket_fd = socket_fd,
-        .clients = clients,
-        .map = new_vhost_map,
-        .client_ips = client_ips,
-    };
 
     size_t index = g_state.env->config->num_vhosts++;
     g_state.env->config->vhosts[index] = new_vhost_map;

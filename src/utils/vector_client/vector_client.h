@@ -43,15 +43,22 @@ struct vector_client *vector_client_append(struct vector_client *v,
                                            struct client *client);
 
 /*
- * Returns the index of the client (comparing socket file descriptors)
- * -1 if it is not found
+ * Returns the client which has the socket_fd file descriptor
+ * NULL if it is not found
+ *
+ * 'wait' refers to the mutex locking function to use (lock or trylock)
+ *
+ * Attention !!
+ * This function locks the client, returns it and does NOT unlock it
+ * That is the calling function's job !
+ *
  */
-ssize_t vector_client_find(struct vector_client *v, int socket_fd);
+struct client *vector_client_find(struct vector_client *v, int socket_fd);
 
 /*
 ** Remove the element at the index `i`.
 ** Returns `NULL` if an error occured.
 */
-struct vector_client *vector_client_remove(struct vector_client *v, size_t i);
+struct vector_client *vector_client_remove(struct client *client);
 
 #endif /* !VECTOR_MUTEX_H */

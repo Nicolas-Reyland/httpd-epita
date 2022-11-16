@@ -24,8 +24,6 @@
 #include "utils/mem.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
-#include "utils/vector/vector.h"
-#include "utils/vector_str/vector_str.h"
 
 // this is just a btach size for events ...
 // not the max number of sockets in the epoll
@@ -118,7 +116,7 @@ _Noreturn void run_server(struct server_env *env)
             {
                 // logging (errno ?)
                 log_error("Error occured in epoll: %d\n", env->events[i]);
-                close_connection(env, socket_fd);
+                close_connection(socket_fd);
                 continue;
             }
             // File not available for reading, so just skipping it
@@ -128,34 +126,32 @@ _Noreturn void run_server(struct server_env *env)
                 continue;
             }
             // Event on the server socket: means there is one more client !
-            else if (incoming_connection(env, socket_fd))
+            else if (incoming_connection(socket_fd))
             {
                 // Maybe log new client connection ?
-                register_connection(env, socket_fd);
+                register_connection(socket_fd);
             }
             // There is data to be read
             else
             {
                 bool alive;
                 size_t data_len;
+                struct client *client = client_from_client_socket(socket_fd);
                 char *data = read_from_connection(socket_fd, &data_len, &alive);
                 if (!alive)
                 {
-                    close_connection(env, socket_fd);
+                    close_connection(socket_fd);
                     continue;
                 }
                 // when threading, add (i, data, size) to queue instead of
                 // doing it now, in the main loop
-                process_data(env, i, data, data_len);
+                process_data(client, data, data_len);
                 free(data);
             }
         }
     }
 
-    // clean up
-    free_server_env(env, true, true);
-
-    exit(EXIT_SUCCESS);
+    graceful_shutdown();
 }
 
 /*
@@ -211,11 +207,13 @@ struct server_env *setup_server(struct server_config *config)
             // close all the previously opened sockets
             for (size_t j = 0; j < i; ++j)
                 free_vhost(vhosts + j, false, false);
+#if 0
             for (size_t j = i; j < config->num_vhosts; ++j)
             {
                 free_vector(vhosts[j].clients);
                 free_vector_str(vhosts[j].client_ips);
             }
+#endif /* 0 */
 
             FREE_SET_NULL(env, vhosts, events)
             return NULL;

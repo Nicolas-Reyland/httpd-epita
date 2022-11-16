@@ -5,6 +5,7 @@
 
 #include "utils/logging.h"
 #include "utils/mem.h"
+#include "utils/state.h"
 
 static struct vector_client *vector_client_resize(struct vector_client *v,
                                                   size_t n);
@@ -50,35 +51,41 @@ void destroy_vector_client(struct vector_client *v)
 }
 
 /*
- * Returns validitity status of 'index' in 'v'
+ * Returns the client which has the socket_fd file descriptor
+ * NULL if it is not found
  */
-bool vector_valid_index(struct vector_client *v, ssize_t index);
-
-/*
- * Returns the index of the client (comparing socket file descriptors)
- * -1 if it is not found
- */
-ssize_t vector_client_find(struct vector_client *v, int socket_fd)
+struct client *vector_client_find(struct vector_client *v, int socket_fd)
 {
-    for (ssize_t i = 0; i < v->size; ++i)
+    for (size_t i = 0; i < v->size; ++i)
     {
-        //
+        if (v->data[i] != NULL)
+        {
+            struct client *client = v->data[i];
+            if (client->socket_fd == socket_fd)
+                return client;
+        }
     }
 
-    return -1;
+    return NULL;
 }
-/*
-** Resize the vector_client to `n` capacity.
+
+/* ** Resize the vector_client to `n` capacity.
 ** Returns `NULL` if an error occured.
 */
 struct vector_client *vector_client_resize(struct vector_client *v, size_t n)
 {
     if (v == NULL)
+    {
+        log_warn("[%u] %s: v is NULL in resize\n", pthread_self(), __func__);
         return NULL;
+    }
 
     v->data = realloc(v->data, (v->capacity = n) * sizeof(struct client *));
     if (v->data == NULL)
+    {
+        log_error("[%u] %s: Out of memory\n", pthread_self(), __func__);
         return NULL;
+    }
 
     if (v->capacity < v->size)
         v->size = v->capacity;
@@ -91,31 +98,33 @@ struct vector_client *vector_client_resize(struct vector_client *v, size_t n)
  */
 bool vector_client_valid_index(struct vector_client *v, ssize_t index)
 {
-    return v == NULL ? false : index >= 0 && index < v->size;
+    size_t index_t = index;
+    return v == NULL ? false : index >= 0 && index_t < v->size;
 }
 
 /*
 ** Append an element to the end of the vector_client. Expand the vector_client
-*if needed.
+** if needed.
 ** Returns `NULL` if an error occured.
 */
 struct vector_client *vector_client_append(struct vector_client *v,
                                            struct client *client)
 {
+    log_debug("[%u] %s: Adding client %d to v\n", pthread_self(), __func__,
+              client->socket_fd);
+
     if (v == NULL)
     {
+        log_error("[%u] %s: vector is NULL\n", pthread_self(), __func__);
         destroy_client(client, true);
         return NULL;
     }
 
     if (v->size == v->capacity)
-    {
-        v = vector_client_resize(v, 2 * v->capacity);
-        if (v == NULL)
+        if ((v = vector_client_resize(v, 2 * v->capacity)) == NULL)
             return NULL;
-    }
 
-    v->data[v->size++] = client;
+    v->data[(client->index = v->size++)] = client;
     return v;
 }
 
@@ -123,18 +132,37 @@ struct vector_client *vector_client_append(struct vector_client *v,
 ** Remove the element at the index `i`.
 ** Replace it with the last element.
 ** Returns `NULL` if an error occured.
+**
+** The vector and client MUST be locked
+**
 */
-struct vector_client *vector_client_remove(struct vector_client *v, size_t i)
+struct vector_client *vector_client_remove(struct client *client)
 {
-    if (v == NULL || i >= v->size)
+    if (client == NULL || client->vhost == NULL)
         return NULL;
 
-    destroy_client(v->data[i], true);
-    v->data[i] = v->data[v->size - 1];
+    struct vector_client *v = client->vhost->clients;
+
+    ssize_t index = client->index;
+    if (v == NULL || !vector_client_valid_index(v, index))
+        return NULL;
+    size_t uindex = client->index;
+
+    v->data[index] = NULL;
+    destroy_client(client, true);
+
+    // Replace
+    size_t last_index = v->size - 1;
+    if (uindex != last_index && v->data[last_index] != NULL)
+    {
+        // Redo the read of the last client (it is locked now)
+        v->data[index] = v->data[last_index];
+        v->data[index]->index = index;
+    }
     --v->size;
 
-    if (v->size < v->capacity / 2)
-        return vector_client_resize(v, v->capacity / 2);
+    size_t half_cap = v->capacity / 2;
+    v = v->size < half_cap ? vector_client_resize(v, half_cap) : v;
 
     return v;
 }

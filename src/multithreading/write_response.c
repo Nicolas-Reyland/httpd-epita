@@ -1,4 +1,4 @@
-#include "thread_safe_write.h"
+#include "write_response.h"
 
 #include <errno.h>
 #include <pthread.h>
@@ -9,18 +9,16 @@
 #include "network/client.h"
 #include "utils/logging.h"
 
-int thread_safe_write(struct vhost *vhost, ssize_t index, struct response *resp)
+int write_response(struct client *client, struct response *resp)
 {
-    size_t index_t = index;
-    if (index == -1 || index_t >= vhost->clients->size)
+    if (client == NULL)
     {
-        log_error("%s: invalid vhsot index %lu\n", __func__, index);
+        log_error("%s:  client is null\n", __func__);
         return -1;
     }
 
-    int client_socket_fd = vhost->clients->data[index];
-    log_debug("Writing %d to %d with lengths %zu and %zu\n", client_socket_fd,
-              resp->fd, resp->file_len, resp->res_len);
+    log_debug("Writing to %d from %d with lengths %zu and %zu\n",
+              client->socket_fd, resp->fd, resp->file_len, resp->res_len);
 
     // Write headers
     size_t total_num_written = 0;
@@ -32,14 +30,12 @@ int thread_safe_write(struct vhost *vhost, ssize_t index, struct response *resp)
         && total_num_written < resp->res_len)
         total_num_written += num_written;
 
-    log_debug("Header written\n");
-
     // Write file (if needed)
     if (resp->fd != -1)
     {
         off_t offset = 0;
         ssize_t sfile_len = resp->file_len;
-        while (offset != sfile_len)
+        while (offset < sfile_len)
         {
             if (sendfile(client->socket_fd, resp->fd, &offset, resp->file_len)
                 == -1)
@@ -50,7 +46,6 @@ int thread_safe_write(struct vhost *vhost, ssize_t index, struct response *resp)
                 return -1;
             }
         }
-        log_debug("%zd bytes written\n", offset);
     }
 
     return 0;

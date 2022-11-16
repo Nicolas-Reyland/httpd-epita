@@ -5,6 +5,7 @@ a.out
 .clang-format
 __pycache__/
 .pytest_cache
+.__*
 
 *.bak
 *.log

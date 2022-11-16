@@ -1,6 +1,7 @@
 #ifndef VHOST_H
 #define VHOST_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -15,11 +16,12 @@ struct vhost
     int socket_fd;
     struct vector_client *clients;
     struct hash_map *map;
-    struct vector_str *client_ips;
 };
 
 struct vhost *init_vhosts(struct server_config *config);
 
+int init_vhost(struct hash_map *map, struct vhost *vhost);
+
 void free_vhost(struct vhost *vhost, bool free_map, bool free_obj);
 
-#endif /* VHOST_H */
+#endif /* !VHOST_H */

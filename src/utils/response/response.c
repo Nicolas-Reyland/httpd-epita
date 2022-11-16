@@ -67,7 +67,8 @@ struct response *create_response(int *err, struct client *client,
     // Access ressource (file)
     int open_ressource_result = open_ressource(path, resp, client->vhost,
                                                strcmp(req->method, "GET") == 0);
-    *err = resp->err free(path);
+    *err = resp->err;
+    free(path);
     if (open_ressource_result == -1)
         return set_error_response(client->vhost, resp, &resp->err);
 
@@ -82,7 +83,8 @@ struct response *parsing_http(char *request_raw, size_t size,
                               struct client *client)
 {
     int err = 200;
-    struct request *req = parser_request(request_raw, size, &err, vhost);
+    struct request *req =
+        parser_request(request_raw, size, &err, client->vhost);
     log_request(client, req, &err);
 
     if (err != 200)

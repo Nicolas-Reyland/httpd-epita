@@ -38,6 +38,7 @@ all: $(EXE)
 
 check: $(TEST_EXE)
 	./$(TEST_EXE) $(CMD_TEST_ARGS)
+	pytest tests/request_test.py
 
 $(EXE): $(OBJS) $(MAIN_C)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)

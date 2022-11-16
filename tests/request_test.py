@@ -87,7 +87,7 @@ def test_socket_path_attack():
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
-    assert response.status == 403
+    assert response.status in [403, 404]
 
 @right_path
 def test_socket_path_attack_2():

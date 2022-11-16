@@ -1,19 +1,32 @@
+#!/usr/bin/env python3
 import subprocess as sp
 import requests
 import time
 import socket
 from http.client import HTTPResponse
+import os
 
+BASE_PATH = os.path.abspath(os.getcwd())
+
+def right_path(f):
+    def g(*args, **kwargs):
+        os.chdir(BASE_PATH)
+        return f(*args, **kwargs)
+    return g
+
+@right_path
 def launch_server(args, configs):
     http_proc = sp.Popen(["./httpd"] + args + configs)
     return http_proc
 
+@right_path
 def test_dry_run():
     http_proc = sp.Popen(["./httpd", "--dry-run", "tests/meta/reload.conf"])
     time.sleep(0.2)
     res = http_proc.wait()
     assert 0 == res
 
+@right_path
 def test_request_default_file():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -22,6 +35,7 @@ def test_request_default_file():
     response = requests.get(f"http://{ip}:{port}/")
     assert 200 == response.status_code
 
+@right_path
 def test_request_no_file():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -30,12 +44,14 @@ def test_request_no_file():
     response = requests.get(f"http://{ip}:{port}/src")
     assert 404 == response.status_code
 
+@right_path
 def send_get(ip, port, target):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
     s.send(f"GET {target} HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     return s
 
+@right_path
 def test_socket_default_file():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -47,6 +63,7 @@ def test_socket_default_file():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 200
 
+@right_path
 def test_socket_error_ip_host_header():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -60,6 +77,7 @@ def test_socket_error_ip_host_header():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
 def test_socket_path_attack():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -71,6 +89,7 @@ def test_socket_path_attack():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 403
 
+@right_path
 def test_socket_path_attack_2():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -82,6 +101,7 @@ def test_socket_path_attack_2():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 404
 
+@right_path
 def test_socket_no_path_attack():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -93,6 +113,7 @@ def test_socket_no_path_attack():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 200
 
+@right_path
 def test_socket_no_host():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -106,6 +127,7 @@ def test_socket_no_host():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
 def test_socket_double_column():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -119,6 +141,7 @@ def test_socket_double_column():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
 def test_socket_protocol_error():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -132,6 +155,7 @@ def test_socket_protocol_error():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 505
 
+@right_path
 def test_socket_method_error():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -145,6 +169,7 @@ def test_socket_method_error():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 405
 
+@right_path
 def test_socket_invalid():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -158,6 +183,7 @@ def test_socket_invalid():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
 def test_not_enough_header():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -171,6 +197,7 @@ def test_not_enough_header():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
 def test_option_invalid():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -184,6 +211,7 @@ def test_option_invalid():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
 def test_no_CRLFCRLF_err():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -197,6 +225,7 @@ def test_no_CRLFCRLF_err():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
 def test_body():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -210,6 +239,7 @@ def test_body():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 200
 
+@right_path
 def test_request_without_port():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -223,6 +253,7 @@ def test_request_without_port():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 200
 
+@right_path
 def test_request_content_len():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -236,6 +267,7 @@ def test_request_content_len():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
 def test_request_content_len_2():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
@@ -248,3 +280,4 @@ def test_request_content_len_2():
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
+

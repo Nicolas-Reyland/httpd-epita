@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 #include <ctype.h>
+#include <stdint.h>
 #include <sys/socket.h>
 
 int my_inet_aton(const char *cp, struct in_addr *addr)
@@ -9,8 +10,8 @@ int my_inet_aton(const char *cp, struct in_addr *addr)
     in_addr_t val;
     int base, n;
     char c;
-    u_int parts[4];
-    u_int *pp = parts;
+    unsigned int parts[4];
+    unsigned int *pp = parts;
     c = *cp;
 
     while (1)

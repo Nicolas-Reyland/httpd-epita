@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "network/server.h"
+#include "process/daemonize.h"
 #include "process/daemons.h"
 #include "utils/logging.h"
 
@@ -20,7 +21,7 @@ _Noreturn void daemon_action_start(struct server_config *config, char *pid_file,
     if (process_flags & DAEMONS_PROC_ALIVE)
         kill(pid, SIGINT);
 
-    daemon(1, 1);
+    daemonize();
     start_all(config, pid_file);
 }
 
@@ -71,6 +72,6 @@ _Noreturn void daemon_action_restart(struct server_config *config,
         kill(pid, SIGTERM);
     }
 
-    daemon(1, 1);
+    daemonize();
     start_all(config, pid_file);
 }

@@ -183,11 +183,13 @@ void process_data(struct client *client, char *data, size_t size)
     log_info("[%u] Processing data for %d\n", pthread_self(),
              client->socket_fd);
 
+#if 0
     // Attention ! Does not print anything after the first 0 byte
     if (g_state.logging && size < DEBUG_MAX_DATA_SIZE)
         // Don't want to allocate this if we aren't debugging
         log_debug("Got: '''\n%s\n'''\n",
                   strncat(memset(alloca(size + 1), 0, 1), data, size));
+#endif /* 0 */
 
     struct response *resp = parsing_http(data, size, client);
     write_response(client, resp);
@@ -199,12 +201,14 @@ void process_data(struct client *client, char *data, size_t size)
         close_connection_client(client);
     }
 
+#if 0
     // Attention ! Does not print anything after the first 0 byte
     if (g_state.logging && resp->res_len < DEBUG_MAX_DATA_SIZE)
         // Don't want to allocate this if we aren't debugging
         log_debug("Got: '''\n%s\n'''\n",
                   strncat(memset(alloca(resp->res_len + 1), 0, 1), resp->res,
                           resp->res_len));
+#endif /* 0 */
     free_response(resp);
 }
 

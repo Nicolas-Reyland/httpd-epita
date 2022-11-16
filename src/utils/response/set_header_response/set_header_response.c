@@ -47,10 +47,9 @@ void set_status_code_header(int(*err), struct response *resp)
 
 void set_header_content_length(size_t content_len, struct response *resp)
 {
-    char *res = alloca(50);
+    char res[50];
     sprintf(res, "Content-Length: %zu\r\n", content_len);
     size_t size = strlen(res);
-    log_debug("Writing \"%s\" to resp\n", res);
     realloc_and_concat(resp, res, size, false);
 }
 
@@ -66,7 +65,7 @@ void set_header_server_name(struct response *resp, struct vhost *vhost)
     char *serv_name = hash_map_get(vhost->map, "server_name");
     if (serv_name)
     {
-        char *res = alloca(50);
+        char res[50];
         sprintf(res, "Server: %s\r\n", serv_name);
         size_t size = strlen(res);
         realloc_and_concat(resp, res, size, false);
@@ -99,7 +98,7 @@ void set_date_gmt_header(struct response *resp)
     time_t timestamp = time(NULL);
     struct tm *pTime = localtime(&timestamp);
 
-    char *buffer = alloca(50);
+    char buffer[50];
     strftime(buffer, 50, "Date: %a, %d %b %Y %H:%M:%S GMT\r\n", pTime);
     size_t size = strlen(buffer);
     realloc_and_concat(resp, buffer, size, false);

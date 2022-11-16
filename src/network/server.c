@@ -1,18 +1,15 @@
 #include "server.h"
 
-#include <arpa/inet.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <netinet/in.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "network/socket_handler.h"
@@ -22,6 +19,7 @@
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
+#include "utils/mylibc/my_inet_aton.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
 
@@ -296,7 +294,7 @@ int create_socket(char *ip_addr, char *port)
 
     // IP addr
     struct sockaddr_in addr_in = { 0 };
-    if (!inet_aton(ip_addr, &addr_in.sin_addr))
+    if (!my_inet_aton(ip_addr, &addr_in.sin_addr))
     {
         log_error("%s: could not retrieve ip address from string '%s'\n",
                   __func__, ip_addr);

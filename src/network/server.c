@@ -327,7 +327,6 @@ int create_socket(char *ip_addr, char *port)
             == -1)
             continue;
 
-        // TODO: only for vhost, or also for the global server ?
         int override = 1;
         if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &override,
                        sizeof(int))

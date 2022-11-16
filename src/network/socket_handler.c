@@ -1,7 +1,7 @@
 #include "socket_handler.h"
 
+#include <arpa/inet.h>
 #include <errno.h>
-#include <netdb.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -37,9 +37,10 @@ void register_connection(int host_socket_fd)
     // There might be multiple new clients
     while (true)
     {
-        struct sockaddr in_addr;
+        struct sockaddr_in in_addr;
         socklen_t in_len = sizeof(in_addr);
-        int client_socket_fd = accept(host_socket_fd, &in_addr, &in_len);
+        void *in_addr_ptr = &in_addr;
+        int client_socket_fd = accept(host_socket_fd, in_addr_ptr, &in_len);
 
         if (client_socket_fd == -1)
         {
@@ -50,15 +51,12 @@ void register_connection(int host_socket_fd)
             break;
         }
 
-        char host_buffer[256], port_buffer[256];
-        if (getnameinfo(&in_addr, in_len, host_buffer, sizeof(host_buffer),
-                        port_buffer, sizeof(port_buffer),
-                        NI_NUMERICHOST | NI_NUMERICSERV)
-            == 0)
+        char host_buffer[INET_ADDRSTRLEN + 1];
+        if (inet_ntop(AF_INET, &in_addr.sin_addr, host_buffer, INET_ADDRSTRLEN) != NULL)
         {
-            log_info("[%u] Accepted connection on descriptor %d @ %s:%s\n",
-                     pthread_self(), client_socket_fd, host_buffer,
-                     port_buffer);
+            log_info("ntop [%u] Accepted connection on descriptor %d @ %s\n",
+                     pthread_self(), client_socket_fd, host_buffer
+                    );
         }
 
         if (!set_socket_nonblocking_mode(client_socket_fd))

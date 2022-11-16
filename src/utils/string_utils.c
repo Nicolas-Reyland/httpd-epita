@@ -9,7 +9,7 @@
 #include "utils/mem.h"
 #include "utils/mylibc/my_getline.h"
 
-#define MY_GETLINE_BUFF_INCR 4096
+ssize_t my_getline(char **lineptr, size_t *n, FILE *stream);
 
 /*
 ** NULL-terminated lines array

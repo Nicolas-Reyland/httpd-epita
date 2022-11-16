@@ -1,8 +1,8 @@
 #include "my_getline.h"
 
 #include <errno.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 ssize_t my_getdelim(char **lineptr, size_t *n, int delimiter, FILE *stream)
 {
@@ -44,8 +44,7 @@ ssize_t my_getdelim(char **lineptr, size_t *n, int delimiter, FILE *stream)
         /* Make enough space for len+1 (for final NUL) bytes.  */
         if (cur_len + 1 >= *n)
         {
-            size_t needed_max =
-                SIZE_MAX;
+            size_t needed_max = SIZE_MAX;
             size_t needed = 2 * *n + 1;
             char *new_lineptr;
 

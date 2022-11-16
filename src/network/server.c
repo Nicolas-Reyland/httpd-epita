@@ -132,19 +132,7 @@ _Noreturn void run_server(struct server_env *env)
             // There is data to be read
             else
             {
-                bool alive;
-                size_t data_len;
-                struct client *client = client_from_client_socket(socket_fd);
-                char *data = read_from_connection(socket_fd, &data_len, &alive);
-                if (!alive)
-                {
-                    close_connection(socket_fd);
-                    continue;
-                }
-                // when threading, add (i, data, size) to queue instead of
-                // doing it now, in the main loop
-                process_data(client, data, data_len);
-                free(data);
+                handle_incoming_data(socket_fd);
             }
         }
     }

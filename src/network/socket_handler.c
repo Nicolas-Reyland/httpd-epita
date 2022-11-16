@@ -24,6 +24,8 @@
 
 #define DEBUG_MAX_DATA_SIZE 300
 
+static void close_connection_client(struct client *client);
+
 void register_connection(int host_socket_fd)
 {
     // get vhost associated to the socket fd
@@ -52,11 +54,11 @@ void register_connection(int host_socket_fd)
         }
 
         char host_buffer[INET_ADDRSTRLEN + 1];
-        if (inet_ntop(AF_INET, &in_addr.sin_addr, host_buffer, INET_ADDRSTRLEN) != NULL)
+        if (inet_ntop(AF_INET, &in_addr.sin_addr, host_buffer, INET_ADDRSTRLEN)
+            != NULL)
         {
             log_info("ntop [%u] Accepted connection on descriptor %d @ %s\n",
-                     pthread_self(), client_socket_fd, host_buffer
-                    );
+                     pthread_self(), client_socket_fd, host_buffer);
         }
 
         if (!set_socket_nonblocking_mode(client_socket_fd))
@@ -95,6 +97,50 @@ void register_connection(int host_socket_fd)
         vector_client_append(vhost->clients, new_client);
         log_debug("Appended %d to clients\n", client_socket_fd);
     }
+}
+
+static void process_data(struct client *client, char *data, size_t size);
+
+void handle_incoming_data(int socket_fd)
+{
+    struct client *client = client_from_client_socket(socket_fd);
+    if (client == NULL)
+    {
+        log_error("%s: Could not find client associated to %d\n", __func__,
+                  socket_fd);
+        return;
+    }
+    bool alive;
+    bool read_all;
+    size_t data_len;
+    char *data = read_from_connection(socket_fd, &data_len, &alive, &read_all);
+    if (!alive)
+    {
+        close_connection(socket_fd);
+        return;
+    }
+    // add data to buffer
+    size_t new_buffered_size = client->buffered_size + data_len;
+    if (client->buffered_data == NULL)
+    {
+        client->buffered_data = data;
+        client->buffered_size = data_len;
+    }
+    else
+    {
+        client->buffered_data =
+            realloc(client->buffered_data, new_buffered_size);
+        memcpy(client->buffered_data + client->buffered_size, data, data_len);
+        client->buffered_size = new_buffered_size;
+        free(data);
+    }
+
+    // process data if needed
+    if (read_all)
+        process_data(client, data, data_len);
+    else
+        log_debug("Did not receive everything from %d. Waiting for more\n",
+                  client->socket_fd);
 }
 
 struct vhost *vhost_from_host_socket(int socket_fd)
@@ -146,6 +192,13 @@ void process_data(struct client *client, char *data, size_t size)
     struct response *resp = parsing_http(data, size, client);
     write_response(client, resp);
 
+    if (resp->close_connection)
+    {
+        log_debug("%s: response object asks to close connection %d\n", __func__,
+                  client->socket_fd);
+        close_connection_client(client);
+    }
+
     // Attention ! Does not print anything after the first 0 byte
     if (g_state.logging && resp->res_len < DEBUG_MAX_DATA_SIZE)
         // Don't want to allocate this if we aren't debugging
@@ -172,6 +225,11 @@ void close_connection(int socket_fd)
     struct client *client = client_from_client_socket(socket_fd);
     log_info("[%u] Closing connection with %d\n", pthread_self(),
              client->socket_fd);
+    close_connection_client(client);
+}
+
+void close_connection_client(struct client *client)
+{
     // Remove (deregister) the file descriptor
     epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, client->socket_fd, NULL);
     // destroy the client (closing file descriptors in the process)

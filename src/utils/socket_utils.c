@@ -15,9 +15,11 @@
 
 #define SOCK_RD_BUFF_SIZE 256
 
-char *read_from_connection(int socket_fd, size_t *data_len, bool *alive)
+char *read_from_connection(int socket_fd, size_t *data_len, bool *alive,
+                           bool *read_all)
 {
     *alive = true;
+    *read_all = false;
     size_t capacity = SOCK_RD_BUFF_SIZE;
     size_t size = 0;
     char *buffer = malloc(capacity);
@@ -38,7 +40,8 @@ char *read_from_connection(int socket_fd, size_t *data_len, bool *alive)
         *data_len = 0;
         return NULL;
     }
-    if (num_read == -1 && errno != EAGAIN)
+    *read_all = num_read == -1 && (errno == EAGAIN || errno == EWOULDBLOCK);
+    if (num_read == -1 && !(*read_all))
     {
         free(buffer);
         log_error("%s(read data): %s\n", __func__, strerror(errno));

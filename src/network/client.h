@@ -13,6 +13,8 @@ struct client
     char *ip_addr;
     struct vhost *vhost;
     ssize_t index;
+    char *buffered_data;
+    size_t buffered_size;
 };
 
 struct client *init_client(struct vhost *vhost, int socket_fd, char *ip_addr);

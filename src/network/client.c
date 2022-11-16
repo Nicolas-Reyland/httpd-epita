@@ -25,6 +25,8 @@ struct client *init_client(struct vhost *vhost, int socket_fd, char *ip_addr)
     client->ip_addr = ip_addr;
     client->vhost = vhost;
     client->index = -1;
+    client->buffered_data = NULL;
+    client->buffered_size = 0;
 
     return client;
 }
@@ -40,6 +42,7 @@ void destroy_client(struct client *client, bool free_obj)
         log_warn("%s(close): %s\n", __func__, strerror(errno));
 
     FREE_SET_NULL(client->ip_addr);
+    FREE_SET_NULL(client->buffered_data);
 
     if (free_obj)
         FREE_SET_NULL(client);

@@ -8,7 +8,7 @@
 
 void register_connection(int host_socket_fd);
 
-void process_data(struct client *client, char *data, size_t size);
+void handle_incoming_data(int socket_fd);
 
 ssize_t incoming_connection(int client_socket_fd);
 

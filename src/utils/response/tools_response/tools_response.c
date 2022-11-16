@@ -38,10 +38,11 @@ int is_path_traversal_attack(char *path, struct vhost *vhost)
 
     if (strncmp(root_dir, resolved_path, strlen(root_dir)) == 0)
     {
-        log_error("HELLO\n");
+        log_debug("Path Traversal Attack: clear\n");
         free(resolved_path);
         return 0;
     }
+    log_warn("Path Traversal Attack: CAUGHT !!!\n");
     free(resolved_path);
     return 1;
 }
@@ -61,7 +62,7 @@ char *get_path_ressource(char *target, struct vhost *vhost)
     }
     char *path = malloc(strlen(root_dir) + 1);
     path = strcpy(path, root_dir);
-    path = realloc(path, strlen(path) + strlen(target) + 1 +1);
+    path = realloc(path, strlen(path) + strlen(target) + 1 + 1);
     path = strcat(path, "/");
     path = strcat(path, target);
 
@@ -83,9 +84,7 @@ char *get_path_ressource(char *target, struct vhost *vhost)
         return path;
     }
     else
-    {
         return path;
-    }
 }
 
 /*
@@ -101,7 +100,7 @@ int open_ressource(char *path, struct response *resp, struct vhost *vhost,
 {
     struct stat sb;
     int res = stat(path, &sb);
-    if(res < 0)
+    if (res < 0)
     {
         resp->err = 404;
         return -1;

@@ -364,7 +364,7 @@ static int not_contain_host(struct hash_map *hash_map, int(*err),
         hash_map_get(hash_map, "Host"); // if host is in the request
     char *ip_server = hash_map_get(vhost->map, "ip");
     char *port_server = hash_map_get(vhost->map, "port");
-    log_error("len str = %zu\n", strlen(ip_server));
+    log_debug("len str = %zu\n", strlen(ip_server));
     char *res = malloc(strlen(ip_server) + 1);
     res = strcpy(res, ip_server);
     if (value_request
@@ -424,7 +424,7 @@ static int verify_content_len_header(struct hash_map *hash_map,
     size_t value_len = 0;
     if (value_request)
         value_len = atoi(value_request);
-    log_error("body size: %zu || value_request_size = %zu\n", body_size,
+    log_debug("body size: %zu || value_request_size = %zu\n", body_size,
               value_len);
     if (!value_request || (value_request && value_len == body_size))
     {
@@ -451,7 +451,7 @@ struct request *parser_request(char *raw_request, size_t size, int(*err),
         return NULL;
     }
     // req->index = index;
-    log_error("target %s\n", req->target);
+    log_debug("target %s\n", req->target);
 
     if (is_not_method_allowed(req->method, err)
         || is_not_protocol_valid(req->version, err)

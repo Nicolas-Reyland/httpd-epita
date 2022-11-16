@@ -54,7 +54,7 @@ _Noreturn void start_all(struct server_config *config, char *pid_file)
         free_server_config(config, true);
         exit(EXIT_FAILURE);
     }
-    log_info( "Setup done. Starting server.\n");
+    log_info("Setup done. Starting server.\n");
 
     // Setup all the global variables
     if (setup_g_state(env) == -1)
@@ -126,7 +126,7 @@ _Noreturn void run_server(struct server_env *env)
                 continue;
             }
             // Event on the server socket: means there is one more client !
-            else if (incoming_connection(socket_fd))
+            else if (incoming_connection(socket_fd) != -1)
             {
                 // Maybe log new client connection ?
                 register_connection(socket_fd);
@@ -196,9 +196,9 @@ struct server_env *setup_server(struct server_config *config)
     {
         char *vhost_ip_addr = hash_map_get(config->vhosts[i], "ip");
         char *vhost_port = hash_map_get(config->vhosts[i], "port");
-        log_debug( "Adding vhost @ %s:%s\n",
-                    vhost_ip_addr, vhost_port);
         vhosts[i].socket_fd = setup_socket(epoll_fd, vhost_ip_addr, vhost_port);
+        log_debug("Added vhost %d @ %s:%s\n", vhosts[i].socket_fd,
+                  vhost_ip_addr, vhost_port);
 
         if (vhosts[i].socket_fd == -1)
         {
@@ -277,7 +277,8 @@ int setup_socket(int epoll_fd, char *ip_addr, char *port)
     event.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
     {
-        log_error("%s(epoll_ctl ADD %s): %s\n", __func__, socket_fd, strerror(errno));
+        log_error("%s(epoll_ctl ADD %s): %s\n", __func__, socket_fd,
+                  strerror(errno));
         close(socket_fd);
         return -1;
     }
@@ -297,7 +298,8 @@ int create_socket(char *ip_addr, char *port)
     struct sockaddr_in addr_in = { 0 };
     if (!inet_aton(ip_addr, &addr_in.sin_addr))
     {
-        log_error("%s: could not retrieve ip address from string '%s'\n", __func__, ip_addr);
+        log_error("%s: could not retrieve ip address from string '%s'\n",
+                  __func__, ip_addr);
         return -1;
     }
     addr_in.sin_family = AF_INET;

@@ -83,7 +83,7 @@ void register_connection(int host_socket_fd)
         }
 
         // register client socket fd to vhost
-        char *client_ip_addr = g_state.logging ? strdup(host_buffer) : NULL;
+        char *client_ip_addr = strdup(host_buffer);
         struct client *new_client =
             init_client(vhost, client_socket_fd, client_ip_addr);
         if (new_client == NULL)
@@ -95,6 +95,7 @@ void register_connection(int host_socket_fd)
         }
 
         vector_client_append(vhost->clients, new_client);
+        log_debug("Appended %d to clients\n", client_socket_fd);
     }
 }
 
@@ -112,7 +113,7 @@ struct client *client_from_client_socket(int socket_fd)
     for (size_t i = 0; i < g_state.env->config->num_vhosts; ++i)
     {
         struct client *client =
-            vector_client_find(client->vhost->clients, socket_fd);
+            vector_client_find(g_state.env->vhosts[i].clients, socket_fd);
 
         if (client != NULL)
             return client;

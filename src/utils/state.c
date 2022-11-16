@@ -10,8 +10,6 @@ struct state g_state = {
     .log_level = LOG_LEVEL,
     .logging = false,
     .log_file_stream = NULL,
-    .num_threads = NUM_THREADS,
-    .thread_ids = NULL,
 };
 
 int setup_g_state(struct server_env *env)
@@ -35,15 +33,6 @@ int setup_g_state(struct server_env *env)
     }
     else
         g_state.log_file_stream = NULL;
-
-    // Threads
-    g_state.num_threads = NUM_THREADS;
-    g_state.thread_ids = calloc(g_state.num_threads, sizeof(pthread_t));
-    if (g_state.num_threads != 0 && g_state.thread_ids == NULL)
-    {
-        log_error("%s: Out of memory (thread_ids)\n", __func__);
-        return -1;
-    }
 
     return 0;
 }

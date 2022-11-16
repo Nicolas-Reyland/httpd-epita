@@ -7,10 +7,9 @@
 #include <unistd.h>
 
 #include "utils/mem.h"
+#include "utils/mylibc/my_getline.h"
 
 #define MY_GETLINE_BUFF_INCR 4096
-
-static ssize_t my_getline(char **lineptr, FILE *stream);
 
 /*
 ** NULL-terminated lines array
@@ -22,10 +21,9 @@ char **read_lines_from_stream(FILE *stream, size_t *num_lines_ptr)
 
     char *lineptr = NULL;
     size_t lineptr_n;
-    (void)my_getline;
 
     for (ssize_t num_read = 0;
-         (num_read = getline(&lineptr, &lineptr_n, stream)) != -1;)
+         (num_read = my_getline(&lineptr, &lineptr_n, stream)) != -1;)
     {
         if (num_read == 0)
             continue;
@@ -62,41 +60,6 @@ char **read_lines_from_stream(FILE *stream, size_t *num_lines_ptr)
 
     *num_lines_ptr = num_lines;
     return lines;
-}
-
-ssize_t my_getline(char **lineptr, FILE *stream)
-{
-    if (lineptr == NULL)
-        return -1;
-
-    *lineptr = malloc(MY_GETLINE_BUFF_INCR);
-    if (*lineptr == NULL)
-        return -1;
-
-    ssize_t size = 0;
-    ssize_t capacity = MY_GETLINE_BUFF_INCR;
-
-    for (char c = 0; (c = fgetc(stream)) != EOF;)
-    {
-        if (c == '\n')
-        {
-            *lineptr = realloc(*lineptr, size + 1);
-            (*lineptr)[size] = 0;
-            return size;
-        }
-        if (size + 1 == capacity)
-            *lineptr = realloc(*lineptr, (capacity += MY_GETLINE_BUFF_INCR));
-        (*lineptr)[size++] = c;
-    }
-    if (size == 0)
-    {
-        FREE_SET_NULL(*lineptr);
-        return -1;
-    }
-
-    *lineptr = realloc(*lineptr, size + 1);
-    (*lineptr)[size] = 0;
-    return size;
 }
 
 void skip_all_classifier(char **content, int (*classifier)(int))

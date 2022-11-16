@@ -69,7 +69,8 @@ bool set_socket_nonblocking_mode(int socket_fd)
     flags |= O_NONBLOCK;
     if (fcntl(socket_fd, F_SETFL, flags) == -1)
     {
-        log_error("%s(fcntl set nonblocking flag): %s", __func__, strerror(errno));
+        log_error("%s(fcntl set nonblocking flag): %s", __func__,
+                  strerror(errno));
         return false;
     }
 

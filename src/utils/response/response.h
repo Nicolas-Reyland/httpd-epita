@@ -16,7 +16,8 @@ struct response
     int err;
 };
 
-struct response *parsing_http(char *request_raw, size_t size, struct client *client);
+struct response *parsing_http(char *request_raw, size_t size,
+                              struct client *client);
 void free_response(struct response *resp);
 
 #endif /* !RESPONSE_H */

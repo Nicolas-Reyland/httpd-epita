@@ -27,7 +27,7 @@ int my_inet_aton(const char *cp, struct in_addr *addr)
             else
                 base = 8;
         }
-        for (;;)
+        while (1)
         {
             if (isascii(c) && isdigit(c))
             {

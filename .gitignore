@@ -1,6 +1,8 @@
 *.o
 httpd
 httpd-test
+slowloris
+
 a.out
 .clang-format
 __pycache__/

@@ -36,7 +36,7 @@ TEST_EXE = httpd-test
 # -*- Rules -*-
 all: $(EXE)
 
-check: $(TEST_EXE)
+check: $(TEST_EXE) $(EXE)
 	./$(TEST_EXE) $(CMD_TEST_ARGS)
 	pytest tests/request_test.py
 
@@ -49,6 +49,7 @@ $(TEST_EXE): $(OBJS) $(TEST_OBJS)
 clean:
 	$(RM) $(EXE) $(OBJS)
 	$(RM) $(TEST_EXE) $(TEST_OBJS)
+	$(RM) -r __pycache__ .pytest_cache
 
 
 # -*- Misc -*-

@@ -135,7 +135,7 @@ def test_socket_double_column():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT:: {ip}:{port}\r\n\r\n".encode())
+    s.send(f"GET /src/main.c HTTP/1.1\r\nhoST:: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -149,7 +149,7 @@ def test_socket_protocol_error():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.2\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
+    s.send(f"GET /src/main.c HTTP/1.2\r\nHOST: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -281,3 +281,32 @@ def test_request_content_len_2():
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
+@right_path
+def test_server_name():
+    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    time.sleep(0.2)
+    ip = "127.5.5.5"
+    server_name = "test.com"
+    port = "42069"
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((ip, int(port)))
+    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}:{port}\r\n\r\n".encode())
+    response = HTTPResponse(s)
+    response.begin()
+    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    assert response.status == 200
+
+@right_path
+def test_server_name_without_ip():
+    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    time.sleep(0.2)
+    ip = "127.5.5.5"
+    server_name = "test.com"
+    port = "42069"
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((ip, int(port)))
+    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\n\r\n".encode())
+    response = HTTPResponse(s)
+    response.begin()
+    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    assert response.status == 200

@@ -363,24 +363,32 @@ static int not_contain_host(struct hash_map *hash_map, int(*err),
     char *value_request =
         hash_map_get(hash_map, "Host"); // if host is in the request
     char *ip_server = hash_map_get(vhost->map, "ip");
+    char *name_server = hash_map_get(vhost->map,"server_name");
     char *port_server = hash_map_get(vhost->map, "port");
-    log_debug("len str = %zu\n", strlen(ip_server));
-    char *res = malloc(strlen(ip_server) + 1);
-    res = strcpy(res, ip_server);
+    char *server_name = malloc(strlen(name_server) + 1);
+    char *ip = malloc(strlen(ip_server) + 1);
+    ip = strcpy(ip, ip_server);
+    server_name = strcpy(server_name,name_server);
     if (value_request
         && is_containning_column(value_request) == 1) // if host is ip:port
     {
-        res = realloc(res,
-                      strlen(res) + strlen(port_server) + 1 + 1); //'\0' + ':'
-        strcat(res, ":");
-        strcat(res, port_server);
+        server_name = realloc(server_name,
+                      strlen(server_name) + strlen(port_server) + 1 + 1);
+        ip = realloc(ip,
+                      strlen(ip) + strlen(port_server) + 1 + 1); //'\0' + ':'
+        strcat(server_name, ":");
+        strcat(server_name, port_server);
+        strcat(ip, ":");
+        strcat(ip, port_server);
     }
-    if (value_request && strcmp(value_request, res) == 0)
+    if (value_request && (strcmp(value_request, ip) == 0 || strcmp(value_request, server_name) == 0))
     {
-        free(res);
+        free(server_name);
+        free(ip);
         return 0;
     }
-    free(res);
+    free(server_name);
+    free(ip);
     *err = HOST_ERR;
     return HOST_ERR;
 }

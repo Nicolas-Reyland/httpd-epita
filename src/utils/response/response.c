@@ -52,6 +52,7 @@ struct response *create_response(int *err, struct client *client,
     set_status_code_header(err, resp); // set header
     set_date_gmt_header(resp); // set header date
     set_header_server_name(resp, client->vhost); // set header server_name
+    connexion_close_header(resp); // set header connexion close
     char *path = get_path_ressource(req->target, client->vhost);
     if (!path)
     {

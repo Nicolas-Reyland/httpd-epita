@@ -74,10 +74,9 @@ char *get_path_ressource(char *target, struct vhost *vhost)
         char *default_file = hash_map_get(vhost->map, "default_file");
         if (!default_file)
         {
-            // TODO: MEMORY LEAKS
-            log_error("Default file doesn t exist in Vhost config\n");
-            free(path);
-            graceful_shutdown();
+            char *str = "index.html";
+            path = realloc(path, strlen(path) + strlen(str) + 1);
+            path = strcat(path, str);
         }
         path = realloc(path, strlen(path) + strlen(default_file) + 1);
         path = strcat(path, default_file);

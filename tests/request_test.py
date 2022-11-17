@@ -14,6 +14,12 @@ def right_path(f):
         return f(*args, **kwargs)
     return g
 
+def send_get(ip, port, target):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((ip, int(port)))
+    s.send(f"GET {target} HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
+    return s
+
 @right_path
 def launch_server(args, configs):
     http_proc = sp.Popen(["./httpd"] + args + configs)
@@ -43,13 +49,7 @@ def test_request_no_file():
     port = "42069"
     response = requests.get(f"http://{ip}:{port}/src")
     assert 404 == response.status_code
-
-@right_path
-def send_get(ip, port, target):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((ip, int(port)))
-    s.send(f"GET {target} HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
-    return s
+    launch_server(["-a", "stop"],["tests/meta/server.conf"])
 
 @right_path
 def test_socket_default_file():
@@ -60,8 +60,8 @@ def test_socket_default_file():
     s = send_get(ip, port, "/src/main.c")
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 200
+    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
 
 @right_path
 def test_socket_error_ip_host_header():

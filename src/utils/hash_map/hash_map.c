@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include "utils/string_utils.h"
 
 struct hash_map *hash_map_init(size_t size)

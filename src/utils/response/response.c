@@ -100,6 +100,7 @@ struct response *parsing_http(char *request_raw, size_t size,
     struct response *resp = create_response(&err, client, req);
     log_response(client, req, &err);
     free_request(req);
+    resp->close_connection = 1;
     return resp;
 }
 

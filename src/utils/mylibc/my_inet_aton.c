@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <sys/socket.h>
 
+static void sub_c_zero(char *c, const char **cp, int *base);
+
+static int sub_big_switch(int n, unsigned int parts[4], in_addr_t *val_ptr);
+
 int my_inet_aton(const char *cp, struct in_addr *addr)
 {
     in_addr_t val;
@@ -23,11 +27,7 @@ int my_inet_aton(const char *cp, struct in_addr *addr)
         base = 10;
         if (c == '0')
         {
-            c = *++cp;
-            if (c == 'x' || c == 'X')
-                base = 16, c = *++cp;
-            else
-                base = 8;
+            sub_c_zero(&c, &cp, &base);
         }
         while (1)
         {
@@ -57,6 +57,26 @@ int my_inet_aton(const char *cp, struct in_addr *addr)
     if (c != '\0' && (!isascii(c) || !isspace(c)))
         return 0;
     n = pp - parts + 1;
+    if (sub_big_switch(n, parts, &val) == 0)
+        return 0;
+
+    if (addr)
+        addr->s_addr = htonl(val);
+    return 1;
+}
+
+void sub_c_zero(char *c, const char **cp, int *base)
+{
+    (*c) = *++(*cp);
+    if (*c == 'x' || *c == 'X')
+        *base = 16, *c = *++(*cp);
+    else
+        *base = 8;
+}
+
+int sub_big_switch(int n, unsigned int parts[4], in_addr_t *val_ptr)
+{
+    in_addr_t val = *val_ptr;
     switch (n)
     {
     case 0:
@@ -80,7 +100,6 @@ int my_inet_aton(const char *cp, struct in_addr *addr)
         val |= (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8);
         break;
     }
-    if (addr)
-        addr->s_addr = htonl(val);
-    return 1;
+    *val_ptr = val;
+    return -1;
 }

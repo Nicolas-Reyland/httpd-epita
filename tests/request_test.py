@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import subprocess as sp
 import requests
 import time
 import socket
@@ -21,30 +20,35 @@ def send_get(ip, port, target):
     return s
 
 @right_path
-def launch_server(args, configs):
-    http_proc = sp.Popen(["./httpd"] + args + configs)
-    return http_proc
+def start_server(config):
+    assert os.system(f"./httpd -a start {config}") == 0
+
+@right_path
+def stop_server(config):
+    assert os.system(f"./httpd -a stop {config}") == 0
+    # Wait up to 0.5s for process to end
+    for _ in range(100):
+        if os.system("pgrep httpd") != 0:
+            break
+        time.sleep(0.05)
 
 @right_path
 def test_dry_run():
-    http_proc = sp.Popen(["./httpd", "--dry-run", "tests/meta/reload.conf"])
-    time.sleep(0.2)
-    res = http_proc.wait()
-    assert 0 == res
+    assert os.system("./httpd --dry-run tests/meta/reload.conf") == 0
 
 @right_path
 def test_request_default_file():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
     response = requests.get(f"http://{ip}:{port}/")
     assert 200 == response.status_code
-    launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
 
 @right_path
 def test_acu():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -54,22 +58,22 @@ def test_acu():
     s.send(f"GET /index.html HTTP/1.1\r\nHost: test.com:{port}\r\nContent-length: 24\r\nConnection: close \r\n\r\nThis is a simple request".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 200
 
 @right_path
 def test_request_no_file():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
     response = requests.get(f"http://{ip}:{port}/src")
     assert 404 == response.status_code
-    launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
 
 @right_path
 def test_socket_default_file():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -77,11 +81,11 @@ def test_socket_default_file():
     response = HTTPResponse(s)
     response.begin()
     assert response.status == 200
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
 
 @right_path
 def test_socket_error_ip_host_header():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -90,48 +94,48 @@ def test_socket_error_ip_host_header():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: 169.2.2.2:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_socket_path_attack():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
     s = send_get(ip, port, "/../../Documents/oop.c")
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status in [403, 404]
 
 @right_path
 def test_socket_path_attack_2():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
     s = send_get(ip, port, "/../Documents/oop.c")
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 404
 
 @right_path
 def test_socket_no_path_attack():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
     s = send_get(ip, port, "/meta/../request_test.py")
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 200
 
 @right_path
 def test_socket_no_host():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -140,12 +144,12 @@ def test_socket_no_host():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\n\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_socket_double_column():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -154,12 +158,12 @@ def test_socket_double_column():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nhoST:: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_socket_protocol_error():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -168,12 +172,12 @@ def test_socket_protocol_error():
     s.send(f"GET /meta/server.conf HTTP/1.2\r\nHOST: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 505
 
 @right_path
 def test_socket_method_error():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -182,12 +186,12 @@ def test_socket_method_error():
     s.send(f"PUT /meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 405
 
 @right_path
 def test_socket_invalid():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -196,12 +200,12 @@ def test_socket_invalid():
     s.send(f"\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_not_enough_header():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -210,12 +214,12 @@ def test_not_enough_header():
     s.send(f"/meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_option_invalid():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -224,13 +228,13 @@ def test_option_invalid():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT     : {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 '''
 @right_path
 def test_no_CRLFCRLF_err():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -239,13 +243,13 @@ def test_no_CRLFCRLF_err():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 '''
 
 @right_path
 def test_body():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -254,12 +258,12 @@ def test_body():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n bisoir".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 200
 
 @right_path
 def test_request_without_port():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -268,12 +272,12 @@ def test_request_without_port():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: {ip}\r\n\r\n bisoir".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 200
 
 @right_path
 def test_request_content_len():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -282,12 +286,12 @@ def test_request_content_len():
     s.send(f"GE\0T /src/\0main.c HTTP/1.1\r\nhOsT: {ip}\r\nContent-Length: 7\r\n\r\n bis\0oir".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_request_content_len_2():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
@@ -296,12 +300,12 @@ def test_request_content_len_2():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: {ip}\r\nContent-Length: 1     3\r\n\r\n bisoirbisoir".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_server_name():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -311,12 +315,12 @@ def test_server_name():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 200
 
 @right_path
 def test_server_name_without_ip():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -326,12 +330,12 @@ def test_server_name_without_ip():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 200
 
 @right_path
 def test_two_times_same_header():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -341,12 +345,12 @@ def test_two_times_same_header():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nHoST: plouf\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_invalid_protocol():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -356,13 +360,13 @@ def test_invalid_protocol():
     s.send(f"GET /meta/server.conf HTTP/1x1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 
 @right_path
 def test_wrong_protocol_bad_request_1():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -372,12 +376,12 @@ def test_wrong_protocol_bad_request_1():
     s.send(f"GET /meta/server.conf FTTP/1.1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_wrong_protocol_bad_request_2():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -387,12 +391,12 @@ def test_wrong_protocol_bad_request_2():
     s.send(f"GET /meta/server.conf HTTP/0w0\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_wrong_protocol_bad_request_3():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -402,12 +406,12 @@ def test_wrong_protocol_bad_request_3():
     s.send(f"GET /meta/server.conf HTTP/1x1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_wrong_protocol_bad_request_4():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -417,12 +421,12 @@ def test_wrong_protocol_bad_request_4():
     s.send(f"GET /meta/server.conf HTTP=1.1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_wrong_protocol_bad_request_5():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -432,12 +436,12 @@ def test_wrong_protocol_bad_request_5():
     s.send(f"GET /meta/server.conf HTTP/1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 505
 
 @right_path
 def test_abc_content_lenght():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -447,12 +451,12 @@ def test_abc_content_lenght():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: abc\r\n\r\nbonsoir".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_content_lenght_negative():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -462,12 +466,12 @@ def test_content_lenght_negative():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: -7\r\n\r\nbonsoir".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_empty_host():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -477,12 +481,12 @@ def test_empty_host():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: \r\nContent-Length: 7\r\n\r\nbonsoir".encode())
     response = HTTPResponse(s)
     response.begin()
-    launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_body_but_no_body():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -492,12 +496,12 @@ def test_body_but_no_body():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: 7\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_bad_white_space():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -507,12 +511,12 @@ def test_bad_white_space():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length : 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_header_is_simple_word():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -522,12 +526,12 @@ def test_header_is_simple_word():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_no_host():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -537,12 +541,12 @@ def test_no_host():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST:\r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_no_host_2():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -552,12 +556,12 @@ def test_no_host_2():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: \r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_missing_leading_slash():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -567,12 +571,12 @@ def test_missing_leading_slash():
     s.send(f"GET src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400 #sould be 400 but is 200
 
 @right_path
 def test_wrong_ip():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -582,12 +586,12 @@ def test_wrong_ip():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: 127.0.0.2\r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_wrong_port():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -597,12 +601,12 @@ def test_wrong_port():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: 127.5.5.5:1312\r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_gui():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -612,12 +616,12 @@ def test_gui():
     s.send(f"GET /index.html HTTP/1.1\r\nHost: 127.5.5.5:42069\r\nContent-length: 24\r\nConnection: close \r\n\r\nThis is a simple request".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 200#sould be an error?
 
 @right_path
 def test_header_multiple_times():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -627,12 +631,12 @@ def test_header_multiple_times():
     s.send(f"GET /index.html HTTP/1.1\r\nHost: 127.5.5.5:42069\r\nContent-length: 24\r\ncontent-length: 24\r\nConnection: close \r\n\r\nThis is a simple request".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_no_header_protocol():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -642,12 +646,12 @@ def test_no_header_protocol():
     s.send(f"GET /index.html \r\nHost: 127.5.5.5:42069\r\nContent-length: 24\r\nConnection: close \r\n\r\nThis is a simple request".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_space_beginning_header():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -657,12 +661,12 @@ def test_space_beginning_header():
     s.send(f"GET /index.html HTTP/1.1\r\n   Host: 127.5.5.5:42069\r\nContent-length: 24\r\nConnection: close \r\n\r\nThis is a simple request".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
 
 @right_path
 def test_space_between_colomn_and_key():
-    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    start_server("tests/meta/server.conf")
     time.sleep(0.2)
     ip = "127.5.5.5"
     server_name = "test.com"
@@ -672,5 +676,6 @@ def test_space_between_colomn_and_key():
     s.send(f"GET /index.html HTTP/1.1\r\nHost : 127.5.5.5:42069\r\nContent-length: 24\r\nConnection: close \r\n\r\nThis is a simple request".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    stop_server("tests/meta/server.conf")
     assert response.status == 400
+

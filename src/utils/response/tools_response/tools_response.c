@@ -108,12 +108,13 @@ int open_ressource(char *path, struct response *resp, struct vhost *vhost,
     // if we can open the file:
     if (!S_IROTH)
     {
+        
         resp->err = 403;
         return -1;
     }
     if (is_path_traversal_attack(path, vhost) == 1)
     {
-        resp->err = 403;
+        resp->err = 404;
         return -1;
     }
 

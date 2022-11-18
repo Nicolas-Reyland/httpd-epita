@@ -43,6 +43,21 @@ def test_request_default_file():
     launch_server(["-a", "stop"],["tests/meta/server.conf"])
 
 @right_path
+def test_acu():
+    http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
+    time.sleep(0.2)
+    ip = "127.5.5.5"
+    server_name = "test.com"
+    port = "42069"
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((ip, int(port)))
+    s.send(f"GET /index.html HTTP/1.1\r\nHost: test.com:{port}\r\nContent-length: 24\r\nConnection: close \r\n\r\nThis is a simple request".encode())
+    response = HTTPResponse(s)
+    response.begin()
+    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    assert response.status == 200
+
+@right_path
 def test_request_no_file():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)

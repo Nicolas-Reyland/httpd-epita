@@ -99,7 +99,7 @@ void register_connection(int host_socket_fd)
     }
 }
 
-static void process_data(struct client *client, char *data, size_t size);
+static int process_data(struct client *client, char *data, size_t size);
 
 void handle_incoming_data(int socket_fd)
 {
@@ -111,9 +111,8 @@ void handle_incoming_data(int socket_fd)
         return;
     }
     bool alive;
-    bool read_all;
     size_t data_len;
-    char *data = read_from_connection(socket_fd, &data_len, &alive, &read_all);
+    char *data = read_from_connection(socket_fd, &data_len, &alive);
     if (!alive)
     {
         close_connection(socket_fd);
@@ -135,10 +134,8 @@ void handle_incoming_data(int socket_fd)
         free(data);
     }
 
-    // process data if needed
-    if (read_all)
-        process_data(client, data, data_len);
-    else
+    // process data. returns 0 if we didn't read enough data
+    if (!process_data(client, data, data_len))
         log_debug("Did not receive everything from %d. Waiting for more\n",
                   client->socket_fd);
 }
@@ -166,30 +163,34 @@ struct client *client_from_client_socket(int socket_fd)
     return NULL;
 }
 
-void process_data(struct client *client, char *data, size_t size)
+/*
+ * Returns 1 if the connection was closed. 0 if we need more data.
+ * Returns -1 on error
+ */
+int process_data(struct client *client, char *data, size_t size)
 {
     if (client == NULL)
     {
         log_error("%s: Got null client\n", __func__);
-        return;
+        return -1;
     }
 
     if (data == NULL)
     {
         log_error("%s: Got empty data\n", __func__);
-        return;
+        return -1;
     }
 
     log_info("[%u] Processing data for %d\n", pthread_self(),
              client->socket_fd);
 
-#if 0
+#ifdef LOG_MSG
     // Attention ! Does not print anything after the first 0 byte
     if (g_state.logging && size < DEBUG_MAX_DATA_SIZE)
         // Don't want to allocate this if we aren't debugging
         log_debug("Got: '''\n%s\n'''\n",
                   strncat(memset(alloca(size + 1), 0, 1), data, size));
-#endif /* 0 */
+#endif /* LOG_MSG */
 
     struct response *resp = parsing_http(data, size, client);
     write_response(client, resp);
@@ -199,17 +200,21 @@ void process_data(struct client *client, char *data, size_t size)
         log_debug("%s: response object asks to close connection %d\n", __func__,
                   client->socket_fd);
         close_connection_client(client);
+
+        return 1;
     }
 
-#if 0
+#ifdef LOG_MSG
     // Attention ! Does not print anything after the first 0 byte
     if (g_state.logging && resp->res_len < DEBUG_MAX_DATA_SIZE)
         // Don't want to allocate this if we aren't debugging
         log_debug("Got: '''\n%s\n'''\n",
                   strncat(memset(alloca(resp->res_len + 1), 0, 1), resp->res,
                           resp->res_len));
-#endif /* 0 */
+#endif /* LOG_MSG */
     free_response(resp);
+
+    return 0;
 }
 
 ssize_t incoming_connection(int client_socket_fd)

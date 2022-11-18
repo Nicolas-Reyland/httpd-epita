@@ -44,7 +44,7 @@ void slowloris(int socket_fd, int client_fd)
     srand(time(NULL));
     set_socket_nonblocking_mode(socket_fd);
     char buffer[4096];
-    char msg[] = "GET / HTTP/1.1\r\nHost: " IPADDR "\r\n\r\n";
+    char msg[] = "GET /.gitignore HTTP/1.1\r\nHost: " IPADDR "\r\n\r\n";
     size_t msg_size = sizeof(msg) - 1;
     size_t remaining_to_write = msg_size;
     while (remaining_to_write)
@@ -63,15 +63,24 @@ void slowloris(int socket_fd, int client_fd)
     }
     printf("Done writing\n");
 
-    ssize_t num_read = read(client_fd, buffer, 4095);
-    if (num_read != -1)
+    while (1)
     {
-        buffer[num_read] = 0;
-        printf("Got :\n'''\n%s\n'''\n", buffer);
-    }
-    else
-    {
-        printf("Got %s\n", strerror(errno));
+        ssize_t num_read = read(socket_fd, buffer, 4095);
+        if (num_read > 0)
+        {
+            buffer[num_read] = 0;
+            printf("Got %zd bytes :\n'''\n%s\n'''\n", num_read, buffer);
+        }
+        else if (num_read == 0)
+        {
+            printf("done\n");
+            break;
+        }
+        else
+        {
+            printf("Got %s\n", strerror(errno));
+            break;
+        }
     }
 }
 

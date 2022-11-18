@@ -135,7 +135,7 @@ void handle_incoming_data(int socket_fd)
     }
 
     // process data. returns 0 if we didn't read enough data
-    if (!process_data(client, data, data_len))
+    if (!process_data(client, client->buffered_data, client->buffered_size))
         log_debug("Did not receive everything from %d. Waiting for more\n",
                   client->socket_fd);
 }
@@ -195,15 +195,6 @@ int process_data(struct client *client, char *data, size_t size)
     struct response *resp = parsing_http(data, size, client);
     write_response(client, resp);
 
-    if (resp->close_connection)
-    {
-        log_debug("%s: response object asks to close connection %d\n", __func__,
-                  client->socket_fd);
-        close_connection_client(client);
-
-        return 1;
-    }
-
 #ifdef LOG_MSG
     // Attention ! Does not print anything after the first 0 byte
     if (g_state.logging && resp->res_len < DEBUG_MAX_DATA_SIZE)
@@ -212,7 +203,17 @@ int process_data(struct client *client, char *data, size_t size)
                   strncat(memset(alloca(resp->res_len + 1), 0, 1), resp->res,
                           resp->res_len));
 #endif /* LOG_MSG */
+    bool close_connection = resp->close_connection;
     free_response(resp);
+
+    if (close_connection)
+    {
+        log_debug("%s: response object asks to close connection %d\n", __func__,
+                  client->socket_fd);
+        close_connection_client(client);
+
+        return 1;
+    }
 
     return 0;
 }

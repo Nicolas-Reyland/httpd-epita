@@ -163,7 +163,9 @@ struct server_env *setup_server(struct server_config *config)
     // check allocations
     if (env == NULL || vhosts == NULL || events == NULL)
     {
-        FREE_SET_NULL(env, vhosts, events);
+        FREE_SET_NULL(env);
+        FREE_SET_NULL(vhosts);
+        FREE_SET_NULL(events);
         log_error("Out of memory (%s)\n", __func__);
         return NULL;
     }
@@ -172,7 +174,9 @@ struct server_env *setup_server(struct server_config *config)
     int epoll_fd = epoll_create(1);
     if (epoll_fd == -1)
     {
-        FREE_SET_NULL(env, vhosts, events);
+        FREE_SET_NULL(env);
+        FREE_SET_NULL(vhosts);
+        FREE_SET_NULL(events);
         log_error("Could not create epoll file descriptor\n");
         return NULL;
     }
@@ -193,15 +197,14 @@ struct server_env *setup_server(struct server_config *config)
             // close all the previously opened sockets
             for (size_t j = 0; j < i; ++j)
                 free_vhost(vhosts + j, false, false);
-#if 0
             for (size_t j = i; j < config->num_vhosts; ++j)
             {
-                free_vector(vhosts[j].clients);
-                free_vector_str(vhosts[j].client_ips);
+                destroy_vector_client(vhosts[j].clients);
             }
-#endif /* 0 */
 
-            FREE_SET_NULL(env, vhosts, events)
+            FREE_SET_NULL(env);
+            FREE_SET_NULL(vhosts);
+            FREE_SET_NULL(events);
             return NULL;
         }
     }

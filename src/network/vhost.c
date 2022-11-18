@@ -53,7 +53,7 @@ void free_vhost(struct vhost *vhost, bool free_map, bool free_obj)
 
     // and un-register socket fd
     epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_DEL, vhost->socket_fd, NULL);
-    CLOSE_ALL(vhost->socket_fd);
+    close(vhost->socket_fd);
 
     // destroy all clients (clllose fds and un-register from epoll)
     destroy_vector_client(vhost->clients);

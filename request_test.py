@@ -501,7 +501,7 @@ def test_header_is_simple_word():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: \r\n\r\n".encode())
+    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])

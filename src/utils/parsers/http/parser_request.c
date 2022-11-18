@@ -481,6 +481,19 @@ static int is_missing_leading_slash_target(struct request *req, int(*err))
     return REQUEST_ERR;
 }
 
+static int check_wait_for_data(char *raw_request, size_t size, int *err)
+{
+    for (size_t i = 0; i < size - 3; i++)
+    {
+        if(raw_request[i] == '\r' && raw_request[i+1] == '\n'
+        && raw_request[i+2] == '\r' && raw_request[i+3] == '\n')
+        {
+            return 1;
+        }
+    }
+    *err = NOT_ENOUGH_DATA;
+    return NOT_ENOUGH_DATA;
+}
 
 /*
  *   request = request string to parse
@@ -492,6 +505,8 @@ static int is_missing_leading_slash_target(struct request *req, int(*err))
 struct request *parser_request(char *raw_request, size_t size, int(*err),
                                struct vhost *vhost)
 {
+    if(check_wait_for_data(raw_request, size, err) == NOT_ENOUGH_DATA)
+        return NULL;
     struct request *req = sub_parser_request(raw_request, size);
     if (!req)
     {

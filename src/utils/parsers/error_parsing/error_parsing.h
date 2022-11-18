@@ -10,6 +10,7 @@ enum error_parsing
     REQUEST_ERR = 400,
     FORBIDDEN = 403,
     NOT_FOUND = 404,
+    NOT_ENOUGH_DATA = 69,
 };
 
 #endif /* !ERROR_PARSING_H */

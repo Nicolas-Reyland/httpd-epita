@@ -40,5 +40,5 @@ _Noreturn void graceful_shutdown(void)
         && g_state.log_file_stream != stderr)
         fclose(g_state.log_file_stream);
 
-    exit(EXIT_SUCCESS);
+    exit(0);
 }

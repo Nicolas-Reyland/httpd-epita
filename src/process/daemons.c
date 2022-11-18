@@ -41,11 +41,10 @@ static pid_t read_pid_file(char *pid_file);
 
 int retrieve_process_flags(char *pid_file)
 {
-    // readable file (and exists) ?
-    if (access(pid_file, R_OK) != 0)
+    pid_t pid = read_pid_file(pid_file);
+    if (pid == 0)
         return DAEMONS_NO_PIDFILE;
 
-    pid_t pid = read_pid_file(pid_file);
     int flags = 0;
 
     flags |= kill(pid, 0) == 0 ? DAEMONS_PROC_ALIVE : DAEMONS_PROC_DEAD;
@@ -57,6 +56,9 @@ int retrieve_process_flags(char *pid_file)
 pid_t read_pid_file(char *pid_file)
 {
     FILE *file = fopen(pid_file, "r");
+    if (file == NULL)
+        return 0;
+
     char buffer[PID_STR_BUFF_SIZE];
 
     size_t num_read = 0;

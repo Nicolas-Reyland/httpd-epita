@@ -219,11 +219,11 @@ def test_no_CRLFCRLF_err():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT: {ip}:{port}\r\n".encode())
+    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
-    assert response.status == 400
+    assert response.status == 200
 
 @right_path
 def test_body():

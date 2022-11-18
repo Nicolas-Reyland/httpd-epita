@@ -34,6 +34,7 @@ int is_path_traversal_attack(char *path, struct vhost *vhost)
     if (!resolved_path)
     {
         free(resolved_path_m);
+        return 0;
     }
 
     if (strncmp(root_dir, resolved_path, strlen(root_dir)) == 0)

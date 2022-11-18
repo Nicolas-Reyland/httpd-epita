@@ -65,7 +65,7 @@ void register_connection(int host_socket_fd)
         {
             log_error("%s: Could not set socket to non-blocking mode\n",
                       __func__);
-            CLOSE_ALL(client_socket_fd);
+            close(client_socket_fd);
             continue;
         }
 
@@ -76,7 +76,7 @@ void register_connection(int host_socket_fd)
                       &event)
             == -1)
         {
-            CLOSE_ALL(client_socket_fd);
+            close(client_socket_fd);
             log_error("%s: Could not register new client %d to epoll\n",
                       __func__, client_socket_fd);
             continue;
@@ -88,7 +88,7 @@ void register_connection(int host_socket_fd)
             init_client(vhost, client_socket_fd, client_ip_addr);
         if (new_client == NULL)
         {
-            CLOSE_ALL(client_socket_fd);
+            close(client_socket_fd);
             log_error("[%u] %s(init client): failed to initialize client\n",
                       pthread_self(), __func__);
             continue;

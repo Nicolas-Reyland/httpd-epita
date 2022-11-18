@@ -40,6 +40,7 @@ def test_request_default_file():
     port = "42069"
     response = requests.get(f"http://{ip}:{port}/")
     assert 200 == response.status_code
+    launch_server(["-a", "stop"],["tests/meta/server.conf"])
 
 @right_path
 def test_request_no_file():
@@ -166,7 +167,7 @@ def test_socket_method_error():
     s.send(f"PUT /meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 405
 
 @right_path
@@ -461,7 +462,7 @@ def test_empty_host():
     s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: \r\nContent-Length: 7\r\n\r\nbonsoir".encode())
     response = HTTPResponse(s)
     response.begin()
-    http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
+    launch_server(["-a", "stop"],["tests/meta/server.conf"])
     assert response.status == 400
 
 @right_path

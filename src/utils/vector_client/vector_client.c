@@ -47,7 +47,8 @@ void destroy_vector_client(struct vector_client *v)
         return;
     for (size_t i = 0; i < v->size; ++i)
         destroy_client(v->data[i], true);
-    FREE_SET_NULL(v->data, v);
+    FREE_SET_NULL(v->data);
+    FREE_SET_NULL(v);
 }
 
 /*

@@ -231,10 +231,19 @@ void tokenise_option(char *token, struct request *request, int *err)
     char *value = tokenise_value(token, &i, &end);
     if (!value)
     {
+        free(key);
         *err = 1;
         return;
     }
-    hash_map_insert(request->hash_map, key, value, NULL);
+    char *is_present = hash_map_get(request->hash_map,key);
+    if(!is_present)
+    {
+        hash_map_insert(request->hash_map, key, value, NULL);
+        return;
+    }
+    free(key);
+    free(value);
+    *err = 1;
 }
 
 /*
@@ -393,6 +402,11 @@ static int not_contain_host(struct hash_map *hash_map, int(*err),
     return HOST_ERR;
 }
 
+static int is_digit(char c)
+{
+    return c <= '9' && c >= '0';
+}
+
 /*
  *   version = version of the structure request
  *   Function: verify if the protocol is valid in req->version
@@ -404,8 +418,25 @@ static int is_not_protocol_valid(char *version, int(*err))
     {
         return 0;
     }
-    *err = VERSION_ERR;
-    return VERSION_ERR;
+    else
+    {
+        if(strlen(version) > 5 && strncmp(version, "HTTP/", 5) == 0)
+        {
+            for (size_t i = 5; i < strlen(version); i++)
+            {
+                if(version[i] != '.' && !is_digit(version[i]))
+                {
+                    *err = REQUEST_ERR;
+                    return REQUEST_ERR;
+                }
+            }
+            *err = VERSION_ERR;
+            return VERSION_ERR;
+            
+        }
+        *err = REQUEST_ERR;
+        return REQUEST_ERR;
+    }
 }
 
 /*

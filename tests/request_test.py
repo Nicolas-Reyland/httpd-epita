@@ -57,7 +57,7 @@ def test_socket_default_file():
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
-    s = send_get(ip, port, "/src/main.c")
+    s = send_get(ip, port, "/meta/server.conf")
     response = HTTPResponse(s)
     response.begin()
     assert response.status == 200
@@ -71,7 +71,7 @@ def test_socket_error_ip_host_header():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT: 169.2.2.2:{port}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: 169.2.2.2:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -107,7 +107,7 @@ def test_socket_no_path_attack():
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
-    s = send_get(ip, port, "/src/../Makefile")
+    s = send_get(ip, port, "/meta/../request_test.py")
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -121,7 +121,7 @@ def test_socket_no_host():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\n\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\n\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -135,7 +135,7 @@ def test_socket_double_column():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhoST:: {ip}:{port}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nhoST:: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -149,7 +149,7 @@ def test_socket_protocol_error():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.2\r\nHOST: {ip}:{port}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.2\r\nHOST: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -163,7 +163,7 @@ def test_socket_method_error():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"PUT /src/main.c HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
+    s.send(f"PUT /meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -191,7 +191,7 @@ def test_not_enough_header():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"/src/main.c HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
+    s.send(f"/meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -205,7 +205,7 @@ def test_option_invalid():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT     : {ip}:{port}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT     : {ip}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -220,7 +220,7 @@ def test_no_CRLFCRLF_err():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -235,7 +235,7 @@ def test_body():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n bisoir".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: {ip}:{port}\r\n\r\n bisoir".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -249,7 +249,7 @@ def test_request_without_port():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT: {ip}\r\n\r\n bisoir".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: {ip}\r\n\r\n bisoir".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -277,7 +277,7 @@ def test_request_content_len_2():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nhOsT: {ip}\r\nContent-Length: 1     3\r\n\r\n bisoirbisoir".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nhOsT: {ip}\r\nContent-Length: 1     3\r\n\r\n bisoirbisoir".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -292,7 +292,7 @@ def test_server_name():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}:{port}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}:{port}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -307,7 +307,7 @@ def test_server_name_without_ip():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -322,7 +322,7 @@ def test_two_times_same_header():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nHoST: plouf\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nHoST: plouf\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -337,7 +337,7 @@ def test_invalid_protocol():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1x1\r\nHoST: {server_name}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1x1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -353,7 +353,7 @@ def test_wrong_protocol_bad_request_1():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c FTTP/1.1\r\nHoST: {server_name}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf FTTP/1.1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -368,7 +368,7 @@ def test_wrong_protocol_bad_request_2():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/0w0\r\nHoST: {server_name}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/0w0\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -383,7 +383,7 @@ def test_wrong_protocol_bad_request_3():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1x1\r\nHoST: {server_name}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1x1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -398,7 +398,7 @@ def test_wrong_protocol_bad_request_4():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP=1.1\r\nHoST: {server_name}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP=1.1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -413,7 +413,7 @@ def test_wrong_protocol_bad_request_5():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1\r\nHoST: {server_name}\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1\r\nHoST: {server_name}\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -428,7 +428,7 @@ def test_abc_content_lenght():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: abc\r\n\r\nbonsoir".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: abc\r\n\r\nbonsoir".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -443,7 +443,7 @@ def test_content_lenght_negative():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: -7\r\n\r\nbonsoir".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: -7\r\n\r\nbonsoir".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -458,7 +458,7 @@ def test_empty_host():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: \r\nContent-Length: 7\r\n\r\nbonsoir".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: \r\nContent-Length: 7\r\n\r\nbonsoir".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -473,7 +473,7 @@ def test_body_but_no_body():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: 7\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: 7\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -488,7 +488,7 @@ def test_bad_white_space():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length : 0\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length : 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -503,7 +503,7 @@ def test_header_is_simple_word():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -518,7 +518,7 @@ def test_no_host():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST:\r\nContent-Length: 0\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST:\r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -533,7 +533,7 @@ def test_no_host_2():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: \r\nContent-Length: 0\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: \r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -563,7 +563,7 @@ def test_wrong_ip():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: 127.0.0.2\r\nContent-Length: 0\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: 127.0.0.2\r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -578,7 +578,7 @@ def test_wrong_port():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: 127.5.5.5:1312\r\nContent-Length: 0\r\n\r\n".encode())
+    s.send(f"GET /meta/server.conf HTTP/1.1\r\nHoST: 127.5.5.5:1312\r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])

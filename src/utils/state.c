@@ -22,17 +22,24 @@ int setup_g_state(struct server_env *env)
     if (g_state.logging)
     {
         char *log_file_path = hash_map_get(env->config->global, "log_file");
-        g_state.log_file_stream =
-            log_file_path == NULL ? stdout : fopen(log_file_path, "w");
-        if (g_state.log_file_stream == NULL)
+        g_state.log_file_stream = NULL;
+        // choose right stream to write logs to
+        if (log_file_path == NULL || strcmp(log_file_path, "stdout"))
+            g_state.log_file_stream = stdout;
+        else if (strcmp(log_file_path, "stderr"))
+            g_state.log_file_stream = stderr;
+        else
         {
-            log_error("%s: could not open log file \"%s\"\n", __func__,
-                      log_file_path);
-            graceful_shutdown();
+            g_state.log_file_stream = fopen(log_file_path, "w");
+            // opening file failed
+            if (g_state.log_file_stream == NULL)
+            {
+                log_error("%s: could not open log file \"%s\"\n", __func__,
+                          log_file_path);
+                graceful_shutdown();
+            }
         }
     }
-    else
-        g_state.log_file_stream = NULL;
 
     return 0;
 }

@@ -50,7 +50,7 @@ void slowloris(int socket_fd, int client_fd)
     while (remaining_to_write)
     {
         // right size to write
-        size_t write_size = 1 + rand() % 10;
+        size_t write_size = 1 + rand() % 20;
         if (write_size > remaining_to_write)
             write_size = remaining_to_write;
 
@@ -59,16 +59,19 @@ void slowloris(int socket_fd, int client_fd)
         write(socket_fd, msg + msg_size - remaining_to_write, write_size);
         remaining_to_write -= write_size;
 
-        ssize_t num_read = read(client_fd, buffer, 4095);
-        if (num_read != -1)
-        {
-            buffer[num_read] = 0;
-            printf("Got :\n'''\n%s\n'''\n", buffer);
-        }
-        else
-        {
-            printf("Got %s\n", strerror(errno));
-        }
+        sleep(1);
+    }
+    printf("Done writing\n");
+
+    ssize_t num_read = read(client_fd, buffer, 4095);
+    if (num_read != -1)
+    {
+        buffer[num_read] = 0;
+        printf("Got :\n'''\n%s\n'''\n", buffer);
+    }
+    else
+    {
+        printf("Got %s\n", strerror(errno));
     }
 }
 

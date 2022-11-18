@@ -148,6 +148,8 @@ struct hash_map *parse_attributes(char ***lines)
 
 static void insert_if_not_present(struct hash_map *map, char *key, char *value);
 
+void fill_root_dir(struct hash_map *vhost_map);
+
 /*
  * Returns true if the config is valid, false otherwise.
  * Fills the config 'global' and 'vhost's with default values
@@ -164,7 +166,7 @@ struct server_config *fill_server_config(struct server_config *config)
         free_server_config(config, true);
         return NULL;
     };
-    insert_if_not_present(config->global, "log", "false");
+    insert_if_not_present(config->global, "log", "true");
 
     char *mandatory_keys[] = { "server_name", "port", "ip", "root_dir" };
     for (size_t i = 0; i < config->num_vhosts; ++i)
@@ -183,41 +185,46 @@ struct server_config *fill_server_config(struct server_config *config)
             };
         }
         insert_if_not_present(vhost_map, "default_file", "index.html");
-        char *root_dir = hash_map_get(vhost_map, "root_dir");
-        char *path_buffer = malloc(PATH_MAX);
-        if (root_dir[0] == '~')
-        {
-            char *home = getenv("HOME");
-            char *new_root_dir = malloc(strlen(root_dir) + strlen(home) + 1);
-            new_root_dir = strcpy(new_root_dir, home);
-            root_dir++;
-            strcat(new_root_dir, root_dir);
-            char *resolved_path = realpath(new_root_dir, path_buffer);
-            if (resolved_path == NULL)
-            {
-                free(path_buffer);
-                hash_map_remove(vhost_map, "root_dir");
-                continue;
-            }
-            resolved_path = realloc(resolved_path, strlen(resolved_path) + 1);
-            hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
-            free(new_root_dir);
-        }
-        else
-        {
-            char *resolved_path = realpath(root_dir, path_buffer);
-            if (resolved_path == NULL)
-            {
-                free(path_buffer);
-                hash_map_remove(vhost_map, "root_dir");
-                continue;
-            }
-            resolved_path = realloc(resolved_path, strlen(resolved_path) + 1);
-            hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
-        }
+        fill_root_dir(vhost_map);
     }
 
     return config;
+}
+
+void fill_root_dir(struct hash_map *vhost_map)
+{
+    char *root_dir = hash_map_get(vhost_map, "root_dir");
+    char *path_buffer = malloc(PATH_MAX);
+    if (root_dir[0] == '~')
+    {
+        char *home = getenv("HOME");
+        char *new_root_dir = malloc(strlen(root_dir) + strlen(home) + 1);
+        new_root_dir = strcpy(new_root_dir, home);
+        root_dir++;
+        strcat(new_root_dir, root_dir);
+        char *resolved_path = realpath(new_root_dir, path_buffer);
+        if (resolved_path == NULL)
+        {
+            free(path_buffer);
+            hash_map_remove(vhost_map, "root_dir");
+            return;
+        }
+        resolved_path = realloc(resolved_path, strlen(resolved_path) + 1);
+        hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
+        free(new_root_dir);
+    }
+    else
+    {
+        char *resolved_path = realpath(root_dir, path_buffer);
+        if (resolved_path == NULL)
+        {
+            free(path_buffer);
+            hash_map_remove(vhost_map, "root_dir");
+            return;
+        }
+        resolved_path = realloc(resolved_path, strlen(resolved_path) + 1);
+        hash_map_insert(vhost_map, "root_dir", resolved_path, NULL);
+    }
 }
 
 void insert_if_not_present(struct hash_map *map, char *key, char *value)

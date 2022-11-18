@@ -115,8 +115,8 @@ int update_vhosts(struct server_config *new_config)
             && reload_add_vhost(new_config->vhosts[i]) == -1)
             return -1;
 
-    FREE_SET_NULL(new_config);
     FREE_SET_NULL(new_config->vhosts);
+    FREE_SET_NULL(new_config);
     FREE_SET_NULL(markers);
     return 0;
 }

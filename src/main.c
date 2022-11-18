@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     if (flags & CMD_FLAG_DAEMON)
         handle_daemon(config, flags);
 
-    start_all(config, NULL);
+    start_all(config, hash_map_get(config->global, "pid_file"));
 }
 
 char *read_cmd_args(int argc, char **argv, int *flags)

@@ -24,9 +24,9 @@ int setup_g_state(struct server_env *env)
         char *log_file_path = hash_map_get(env->config->global, "log_file");
         g_state.log_file_stream = NULL;
         // choose right stream to write logs to
-        if (log_file_path == NULL || strcmp(log_file_path, "stdout"))
+        if (log_file_path == NULL || strcmp(log_file_path, "stdout") == 0)
             g_state.log_file_stream = stdout;
-        else if (strcmp(log_file_path, "stderr"))
+        else if (strcmp(log_file_path, "stderr") == 0)
             g_state.log_file_stream = stderr;
         else
         {

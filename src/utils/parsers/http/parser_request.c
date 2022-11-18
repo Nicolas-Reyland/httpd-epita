@@ -473,6 +473,15 @@ static int verify_content_len_header(struct hash_map *hash_map,
     return REQUEST_ERR;
 }
 
+static int is_missing_leading_slash_target(struct request *req, int(*err))
+{
+    if(req->target && req->target[0] == '/')
+        return 0;
+    *err = REQUEST_ERR;
+    return REQUEST_ERR;
+}
+
+
 /*
  *   request = request string to parse
  *   size = length of the request
@@ -495,7 +504,8 @@ struct request *parser_request(char *raw_request, size_t size, int(*err),
     if (is_not_method_allowed(req->method, err)
         || is_not_protocol_valid(req->version, err)
         || not_contain_host(req->hash_map, err, vhost)
-        || verify_content_len_header(req->hash_map, req->body_size, err) != 0)
+        || verify_content_len_header(req->hash_map, req->body_size, err) != 0
+        || is_missing_leading_slash_target(req, err))
     {
         return req;
     }

@@ -83,7 +83,7 @@ def test_socket_path_attack():
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
-    s = send_get(ip, port, "../../Documents/oop.c")
+    s = send_get(ip, port, "/../../Documents/oop.c")
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -95,7 +95,7 @@ def test_socket_path_attack_2():
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
-    s = send_get(ip, port, "../Documents/oop.c")
+    s = send_get(ip, port, "/../Documents/oop.c")
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -107,7 +107,7 @@ def test_socket_no_path_attack():
     time.sleep(0.2)
     ip = "127.5.5.5"
     port = "42069"
-    s = send_get(ip, port, "src/../Makefile")
+    s = send_get(ip, port, "/src/../Makefile")
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
@@ -538,7 +538,7 @@ def test_no_host_2():
     assert response.status == 400
 
 @right_path
-def test_leading_slash():
+def test_missing_leading_slash():
     http_proc = launch_server(["-a", "start"],["tests/meta/server.conf"])
     time.sleep(0.2)
     ip = "127.5.5.5"
@@ -546,11 +546,11 @@ def test_leading_slash():
     port = "42069"
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ip, int(port)))
-    s.send(f"GET /src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: 0\r\n\r\n".encode())
+    s.send(f"GET src/main.c HTTP/1.1\r\nHoST: {server_name}\r\nContent-Length: 0\r\n\r\n".encode())
     response = HTTPResponse(s)
     response.begin()
     http_proc = launch_server(["-a", "stop"],["tests/meta/server.conf"])
-    assert response.status == 200 #sould be 400 but is 200
+    assert response.status == 400 #sould be 400 but is 200
 
 @right_path
 def test_wrong_ip():

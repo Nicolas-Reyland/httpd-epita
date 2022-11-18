@@ -109,13 +109,13 @@ char *hash_map_get(const struct hash_map *hash_map, char *key)
     if (hash_map == NULL)
         return NULL;
 
-    for (size_t i = 0; i < hash_map->size; ++i)
-    {
-        for (struct pair_list *list = hash_map->data[i]; list != NULL;
-             list = list->next)
-            if (my_strcasecmp(key, list->key) == 0)
-                return list->value;
-    }
+    size_t hash_of_key = hash(key);
+    hash_of_key %= hash_map->size;
+
+    for (struct pair_list *list = hash_map->data[hash_of_key]; list != NULL;
+         list = list->next)
+        if (my_strcasecmp(key, list->key) == 0)
+            return list->value;
 
     return NULL;
 }

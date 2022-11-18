@@ -178,6 +178,8 @@ static char *tokenise_key(char *token, size_t *i, size_t *end)
     if (!token)
         return NULL;
     *i = next_token(token, *i, NULL);
+    if(*i != 0)
+        return NULL;
     char c = ':';
     *end = end_token(token, *i, &c);
     if (token[*i] == '\0')
@@ -483,6 +485,11 @@ static int is_missing_leading_slash_target(struct request *req, int(*err))
 
 static int check_wait_for_data(char *raw_request, size_t size, int *err)
 {
+    if(size < 4)
+    {
+        *err = NOT_ENOUGH_DATA;
+        return NOT_ENOUGH_DATA;
+    }
     for (size_t i = 0; i < size - 3; i++)
     {
         if(raw_request[i] == '\r' && raw_request[i+1] == '\n'

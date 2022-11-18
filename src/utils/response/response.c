@@ -11,6 +11,7 @@
 #include "utils/response/set_header_response/set_header_response.h"
 #include "utils/response/tools_response/tools_response.h"
 #include "utils/state.h"
+#include "utils/parsers/error_parsing/error_parsing.h"
 
 static struct response *init_response(void);
 
@@ -88,7 +89,6 @@ struct response *parsing_http(char *request_raw, size_t size,
     struct request *req =
         parser_request(request_raw, size, &err, client->vhost);
     log_request(client, req, &err);
-
     if (err != 200)
     {
         log_response(client, req, &err);

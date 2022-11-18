@@ -7,6 +7,7 @@
 
 #include "utils/logging.h"
 #include "utils/response/response.h"
+#include "utils/parsers/error_parsing/error_parsing.h"
 
 //--------------------------------------------------------------------------------
 //------------------------------Set header
@@ -78,7 +79,9 @@ struct response *set_error_response(struct vhost *vhost, struct response *resp,
     free(resp->res);
     resp->res_len = 0;
     resp->res = NULL;
-    resp->close_connection = 1;
+    resp->close_connection = (*err != NOT_ENOUGH_DATA);
+    if(!resp->close_connection)
+        return resp;
     set_status_code_header(err, resp); // set header
     set_date_gmt_header(resp); // set header date
     set_header_server_name(resp, vhost); // set header server name

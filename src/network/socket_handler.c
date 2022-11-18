@@ -42,60 +42,52 @@ void register_connection(int host_socket_fd)
         struct sockaddr_in in_addr;
         socklen_t in_len = sizeof(in_addr);
         void *in_addr_ptr = &in_addr;
-        int client_socket_fd = accept(host_socket_fd, in_addr_ptr, &in_len);
+        int c_socket_fd = accept(host_socket_fd, in_addr_ptr, &in_len);
 
-        if (client_socket_fd == -1)
+        if (c_socket_fd == -1)
         {
             if (errno != EAGAIN && errno != EWOULDBLOCK)
-                log_error("Could not accept connection for host %s: %s\n",
-                          hash_map_get(vhost->map, "server_name"),
-                          strerror(errno));
+                log_error("%s(accept): %s: %s\n", __func__, strerror(errno));
             break;
         }
 
-        char host_buffer[INET_ADDRSTRLEN + 1];
-        if (inet_ntop(AF_INET, &in_addr.sin_addr, host_buffer, INET_ADDRSTRLEN)
+        char host[INET_ADDRSTRLEN + 1];
+        if (inet_ntop(AF_INET, &in_addr.sin_addr, host, INET_ADDRSTRLEN)
             != NULL)
         {
-            log_info("ntop [%u] Accepted connection on descriptor %d @ %s\n",
-                     pthread_self(), client_socket_fd, host_buffer);
+            log_info("Accepted connection on %d @ %s\n", c_socket_fd, host);
         }
 
-        if (!set_socket_nonblocking_mode(client_socket_fd))
+        if (!set_socket_nonblocking_mode(c_socket_fd))
         {
             log_error("%s: Could not set socket to non-blocking mode\n",
                       __func__);
-            close(client_socket_fd);
+            close(c_socket_fd);
             continue;
         }
 
         struct epoll_event event = { 0 };
-        event.data.fd = client_socket_fd;
+        event.data.fd = c_socket_fd;
         event.events = EPOLLIN | EPOLLET;
-        if (epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_ADD, client_socket_fd,
-                      &event)
+        if (epoll_ctl(g_state.env->epoll_fd, EPOLL_CTL_ADD, c_socket_fd, &event)
             == -1)
         {
-            close(client_socket_fd);
+            close(c_socket_fd);
             log_error("%s: Could not register new client %d to epoll\n",
-                      __func__, client_socket_fd);
+                      __func__, c_socket_fd);
             continue;
         }
 
         // register client socket fd to vhost
-        char *client_ip_addr = strdup(host_buffer);
-        struct client *new_client =
-            init_client(vhost, client_socket_fd, client_ip_addr);
-        if (new_client == NULL)
+        struct client *client = init_client(vhost, c_socket_fd, strdup(host));
+        if (client == NULL)
         {
-            close(client_socket_fd);
-            log_error("[%u] %s(init client): failed to initialize client\n",
-                      pthread_self(), __func__);
+            close(c_socket_fd);
             continue;
         }
 
-        vector_client_append(vhost->clients, new_client);
-        log_debug("Appended %d to clients\n", client_socket_fd);
+        vector_client_append(vhost->clients, client);
+        log_debug("Appended %d to clients\n", c_socket_fd);
     }
 }
 

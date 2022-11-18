@@ -23,5 +23,5 @@ void hash_map_dump(struct hash_map *map, const char *prefix)
             printf("\n%s%s: %s", prefix, list->key, list->value);
         putchar('\n');
     }
-#endif
+#endif /* 0 */
 }

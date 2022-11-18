@@ -78,7 +78,8 @@ bool set_socket_nonblocking_mode(int socket_fd)
 
 ssize_t safe_write(int fd, void *buf, size_t len)
 {
-    sigset_t oldset, newset;
+    sigset_t oldset;
+    sigset_t newset;
     ssize_t result;
     siginfo_t si;
     struct timespec ts = { 0 };

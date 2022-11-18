@@ -8,7 +8,8 @@
 int my_inet_aton(const char *cp, struct in_addr *addr)
 {
     in_addr_t val;
-    int base, n;
+    int base;
+    int n;
     char c;
     unsigned int parts[4];
     unsigned int *pp = parts;

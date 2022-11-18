@@ -275,35 +275,29 @@ int setup_socket(int epoll_fd, char *ip_addr, char *port)
     return socket_fd;
 }
 
+static void *address_pointer(char *ip_addr, char *port,
+                             struct sockaddr_in *addr_in);
+
 int create_socket(char *ip_addr, char *port)
 {
-    struct addrinfo hints = { 0 }; // init all fields to zero
-    hints.ai_flags = AI_PASSIVE; // All interfaces
-    hints.ai_family = AF_INET; // IPv4 choices
-    hints.ai_protocol = IPPROTO_TCP; // TCP Protocol only
-    hints.ai_socktype = SOCK_STREAM; // TCP socket
+    struct addrinfo hints = {
+        .ai_flags = AI_PASSIVE, // All interfaces
+        .ai_family = AF_INET, // IPv4 choices
+        .ai_protocol = IPPROTO_TCP, // TCP Protocol only
+        .ai_socktype = SOCK_STREAM, // TCP socket
+    };
 
     // IP addr
     struct sockaddr_in addr_in = { 0 };
-    if (!my_inet_aton(ip_addr, &addr_in.sin_addr))
-    {
-        log_error("%s: could not retrieve ip address from string '%s'\n",
-                  __func__, ip_addr);
+    if ((hints.ai_addr = address_pointer(ip_addr, port, &addr_in)) == NULL)
         return -1;
-    }
-    addr_in.sin_family = AF_INET;
-    addr_in.sin_port = htons(strtol(port, NULL, 10));
-    void *addr_ptr = &addr_in;
-    hints.ai_addr = addr_ptr;
     hints.ai_addrlen = sizeof(struct sockaddr_in);
 
     int gai_err_code;
     struct addrinfo *result;
     if ((gai_err_code = getaddrinfo(NULL, port, &hints, &result)) != 0)
     {
-        log_error(
-            "Could not get address info from port '%s' with error: ''%s'\n",
-            port, gai_strerror(gai_err_code));
+        log_error("%s(gai): %s\n", __func__, gai_strerror(gai_err_code));
         freeaddrinfo(result);
         return -1;
     }
@@ -313,18 +307,16 @@ int create_socket(char *ip_addr, char *port)
     // Test all the potenntial addresses
     for (; addr != NULL; addr = addr->ai_next)
     {
+        int override = 1;
         if ((socket_fd =
                  socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol))
-            == -1)
+                == -1
+            || setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &override,
+                          sizeof(int))
+                == -1)
             continue;
 
-        int override = 1;
-        if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &override,
-                       sizeof(int))
-            == -1)
-            continue;
-
-        if (bind(socket_fd, addr_ptr, sizeof(struct sockaddr_in)) == 0)
+        if (bind(socket_fd, hints.ai_addr, sizeof(struct sockaddr_in)) == 0)
             // Successful bind
             break;
 
@@ -337,11 +329,25 @@ int create_socket(char *ip_addr, char *port)
 
     if (addr == NULL)
     {
-        log_error("%s: no suitable address found\n", __func__);
-        if (errno != 0)
-            log_error("%s: %s\n", __func__, strerror(errno));
+        log_error("%s: no suitable address found for %s:%s (%s)\n", __func__,
+                  ip_addr, port, errno ? strerror(errno) : "no error");
         return -1;
     }
 
     return socket_fd;
+}
+
+void *address_pointer(char *ip_addr, char *port, struct sockaddr_in *addr_in)
+{
+    if (!my_inet_aton(ip_addr, &addr_in->sin_addr))
+    {
+        log_error("%s: could not retrieve ip address from string '%s'\n",
+                  __func__, ip_addr);
+        return NULL;
+    }
+    addr_in->sin_family = AF_INET;
+    addr_in->sin_port = htons(strtol(port, NULL, 10));
+
+    void *addr_ptr = addr_in;
+    return addr_ptr;
 }

@@ -1,5 +1,5 @@
-#ifndef VECTOR_MUTEX_H
-#define VECTOR_MUTEX_H
+#ifndef VECTOR_CLIENT_H
+#define VECTOR_CLIENT_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -61,4 +61,4 @@ struct client *vector_client_find(struct vector_client *v, int socket_fd);
 */
 struct vector_client *vector_client_remove(struct client *client);
 
-#endif /* !VECTOR_MUTEX_H */
+#endif /* !VECTOR_CLIENT_H */

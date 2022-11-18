@@ -123,16 +123,10 @@ int update_vhosts(struct server_config *new_config)
 
 static int update_logging(struct hash_map *new_global);
 
-static int update_pid_file(struct hash_map *new_global);
-
 int update_global(struct hash_map *new_global)
 {
     // Update logging
     if (update_logging(new_global) == -1)
-        return -1;
-
-    // Update pid file
-    if (update_pid_file(new_global) == -1)
         return -1;
 
     free_hash_map(new_global, true);
@@ -199,12 +193,6 @@ int update_logging(struct hash_map *new_global)
     g_state.log_file_stream = NULL;
     g_state.logging = false;
 
-    return 0;
-}
-
-int update_pid_file(struct hash_map *new_global)
-{
-    (void)new_global;
     return 0;
 }
 

@@ -108,7 +108,6 @@ int open_ressource(char *path, struct response *resp, struct vhost *vhost,
     // if we can open the file:
     if (!S_IROTH)
     {
-        
         resp->err = 403;
         return -1;
     }

@@ -51,7 +51,7 @@ struct request *init_request(void)
  *   index = index where we ended the parsing
  *   Function: Search the index of the end of the token
  */
-size_t end_token(char *request, size_t index, char *delim)
+static size_t end_token(char *request, size_t index, char *delim)
 {
     size_t i = index;
     if (!delim)
@@ -71,7 +71,7 @@ size_t end_token(char *request, size_t index, char *delim)
  *   delim = an aditional delim that you can give or not
  *   Function: Search the index of the next token
  */
-size_t next_token(char *request, size_t index, char *delim)
+static size_t next_token(char *request, size_t index, char *delim)
 {
     size_t i = index;
     if (delim)
@@ -90,7 +90,7 @@ size_t next_token(char *request, size_t index, char *delim)
  *   begin = index where the token begin
  *   Function: Copy the caracters between begin and end
  */
-char *my_strcpy(char *request, size_t begin, size_t end)
+static char *my_strcpy(char *request, size_t begin, size_t end)
 {
     char *dest = malloc(sizeof(char) * (end - begin + 1));
     size_t j = 0;
@@ -148,7 +148,7 @@ static char *parse_header(char *request, size_t *begin, size_t *end)
  *             header line given in parameter. Return NULL in
  *             case of error
  */
-struct request *parse_request_header(char *request)
+static struct request *parse_request_header(char *request)
 {
     struct request *req = init_request();
     if (!req)
@@ -218,7 +218,7 @@ static char *tokenise_value(char *token, size_t *i, size_t *end)
  *   Function: Tokenise a string containing "key: value" and puts
  *              it in hashmap of request
  */
-void tokenise_option(char *token, struct request *request, int *err)
+static void tokenise_option(char *token, struct request *request, int *err)
 {
     if (!token)
         return;
@@ -252,7 +252,7 @@ void tokenise_option(char *token, struct request *request, int *err)
  *   c = character to test
  *   Function: Test if c is a carriage return
  */
-int is_not_cr(int c)
+static int is_not_cr(int c)
 {
     return c != '\r';
 }

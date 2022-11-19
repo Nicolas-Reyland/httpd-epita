@@ -3,6 +3,7 @@ import requests
 import time
 import socket
 from http.client import HTTPResponse
+import subprocess as sp
 import os
 
 BASE_PATH = os.path.abspath(os.getcwd())
@@ -35,6 +36,11 @@ def stop_server(config):
 @right_path
 def test_dry_run():
     assert os.system("./httpd --dry-run tests/meta/reload.conf") == 0
+
+@right_path
+def test_false_dry_run():
+    proc = sp.Popen("./httpd --dry-run tests/meta/wrong-reload.conf".split(' '))
+    assert proc.wait(1.0) == 2
 
 @right_path
 def test_request_default_file():

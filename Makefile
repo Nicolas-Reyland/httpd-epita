@@ -37,7 +37,9 @@ TEST_EXE = httpd-test
 all: $(EXE)
 
 check: $(TEST_EXE) $(EXE)
+	@echo --- Executing Criterion test suite
 	./$(TEST_EXE) $(CMD_TEST_ARGS)
+	@echo --- Executing Pytest test suite
 	pytest tests/request_test.py
 
 $(EXE): $(OBJS) $(MAIN_C)

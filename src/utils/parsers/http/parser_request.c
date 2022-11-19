@@ -178,7 +178,7 @@ static char *tokenise_key(char *token, size_t *i, size_t *end)
     if (!token)
         return NULL;
     *i = next_token(token, *i, NULL);
-    if(*i != 0)
+    if (*i != 0)
         return NULL;
     char c = ':';
     *end = end_token(token, *i, &c);
@@ -237,8 +237,8 @@ static void tokenise_option(char *token, struct request *request, int *err)
         *err = 1;
         return;
     }
-    char *is_present = hash_map_get(request->hash_map,key);
-    if(!is_present)
+    char *is_present = hash_map_get(request->hash_map, key);
+    if (!is_present)
     {
         hash_map_insert(request->hash_map, key, value, NULL);
         return;
@@ -374,25 +374,27 @@ static int not_contain_host(struct hash_map *hash_map, int(*err),
     char *value_request =
         hash_map_get(hash_map, "Host"); // if host is in the request
     char *ip_server = hash_map_get(vhost->map, "ip");
-    char *name_server = hash_map_get(vhost->map,"server_name");
+    char *name_server = hash_map_get(vhost->map, "server_name");
     char *port_server = hash_map_get(vhost->map, "port");
     char *server_name = malloc(strlen(name_server) + 1);
     char *ip = malloc(strlen(ip_server) + 1);
     ip = strcpy(ip, ip_server);
-    server_name = strcpy(server_name,name_server);
+    server_name = strcpy(server_name, name_server);
     if (value_request
         && is_containning_column(value_request) == 1) // if host is ip:port
     {
-        server_name = realloc(server_name,
-                      strlen(server_name) + strlen(port_server) + 1 + 1);
+        server_name = realloc(
+            server_name, strlen(server_name) + strlen(port_server) + 1 + 1);
         ip = realloc(ip,
-                      strlen(ip) + strlen(port_server) + 1 + 1); //'\0' + ':'
+                     strlen(ip) + strlen(port_server) + 1 + 1); //'\0' + ':'
         strcat(server_name, ":");
         strcat(server_name, port_server);
         strcat(ip, ":");
         strcat(ip, port_server);
     }
-    if (value_request && (strcmp(value_request, ip) == 0 || strcmp(value_request, server_name) == 0))
+    if (value_request
+        && (strcmp(value_request, ip) == 0
+            || strcmp(value_request, server_name) == 0))
     {
         free(server_name);
         free(ip);
@@ -422,11 +424,11 @@ static int is_not_protocol_valid(char *version, int(*err))
     }
     else
     {
-        if(strlen(version) > 5 && strncmp(version, "HTTP/", 5) == 0)
+        if (strlen(version) > 5 && strncmp(version, "HTTP/", 5) == 0)
         {
             for (size_t i = 5; i < strlen(version); i++)
             {
-                if(version[i] != '.' && !is_digit(version[i]))
+                if (version[i] != '.' && !is_digit(version[i]))
                 {
                     *err = REQUEST_ERR;
                     return REQUEST_ERR;
@@ -434,7 +436,6 @@ static int is_not_protocol_valid(char *version, int(*err))
             }
             *err = VERSION_ERR;
             return VERSION_ERR;
-            
         }
         *err = REQUEST_ERR;
         return REQUEST_ERR;
@@ -477,7 +478,7 @@ static int verify_content_len_header(struct hash_map *hash_map,
 
 static int is_missing_leading_slash_target(struct request *req, int(*err))
 {
-    if(req->target && req->target[0] == '/')
+    if (req->target && req->target[0] == '/')
         return 0;
     *err = REQUEST_ERR;
     return REQUEST_ERR;
@@ -485,15 +486,15 @@ static int is_missing_leading_slash_target(struct request *req, int(*err))
 
 static int check_wait_for_data(char *raw_request, size_t size, int *err)
 {
-    if(size < 4)
+    if (size < 4)
     {
         *err = NOT_ENOUGH_DATA;
         return NOT_ENOUGH_DATA;
     }
     for (size_t i = 0; i < size - 3; i++)
     {
-        if(raw_request[i] == '\r' && raw_request[i+1] == '\n'
-        && raw_request[i+2] == '\r' && raw_request[i+3] == '\n')
+        if (raw_request[i] == '\r' && raw_request[i + 1] == '\n'
+            && raw_request[i + 2] == '\r' && raw_request[i + 3] == '\n')
         {
             return 1;
         }
@@ -512,7 +513,7 @@ static int check_wait_for_data(char *raw_request, size_t size, int *err)
 struct request *parser_request(char *raw_request, size_t size, int(*err),
                                struct vhost *vhost)
 {
-    if(check_wait_for_data(raw_request, size, err) == NOT_ENOUGH_DATA)
+    if (check_wait_for_data(raw_request, size, err) == NOT_ENOUGH_DATA)
         return NULL;
     struct request *req = sub_parser_request(raw_request, size);
     if (!req)

@@ -7,11 +7,11 @@
 #include <unistd.h>
 
 #include "utils/logging.h"
+#include "utils/parsers/error_parsing/error_parsing.h"
 #include "utils/response/log_functions_http_parsing/log_functions_http_parsing.h"
 #include "utils/response/set_header_response/set_header_response.h"
 #include "utils/response/tools_response/tools_response.h"
 #include "utils/state.h"
-#include "utils/parsers/error_parsing/error_parsing.h"
 
 static struct response *init_response(void);
 

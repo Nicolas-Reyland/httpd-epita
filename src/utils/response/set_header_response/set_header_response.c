@@ -6,8 +6,8 @@
 #include <time.h>
 
 #include "utils/logging.h"
-#include "utils/response/response.h"
 #include "utils/parsers/error_parsing/error_parsing.h"
+#include "utils/response/response.h"
 
 //--------------------------------------------------------------------------------
 //------------------------------Set header
@@ -80,7 +80,7 @@ struct response *set_error_response(struct vhost *vhost, struct response *resp,
     resp->res_len = 0;
     resp->res = NULL;
     resp->close_connection = (*err != NOT_ENOUGH_DATA);
-    if(!resp->close_connection)
+    if (!resp->close_connection)
         return resp;
     set_status_code_header(err, resp); // set header
     set_date_gmt_header(resp); // set header date

@@ -1,17 +1,23 @@
+# make garbage
 *.o
 httpd
 httpd-test
-slowloris
 
+# other binaries
+slowloris
 a.out
+
+# pretty-code stuff
 .clang-format
+.vscode
+
+# python garbage (pytest)
 __pycache__/
 .pytest_cache
 .__*
 
+# general garbage
 *.bak
 *.log
 *.txt
 
-# :(
-.vscode

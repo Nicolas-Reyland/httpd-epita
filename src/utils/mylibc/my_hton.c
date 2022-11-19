@@ -8,18 +8,18 @@ uint16_t my_htons(uint16_t x)
 {
 #if BYTE_ORDER != BIG_ENDIAN
     return x;
-#else
+#else /* BYTE_ORDER != BIG_ENDIAN */
     return swap_uint16(x);
-#endif /* BYTE_ORDER == BIG_ENDIAN */
+#endif /* BYTE_ORDER != BIG_ENDIAN */
 }
 
 uint32_t my_htonl(uint32_t x)
 {
 #if BYTE_ORDER != BIG_ENDIAN
     return x;
-#else
+#else /* BYTE_ORDER != BIG_ENDIAN */
     return swap_uint32(x);
-#endif /* BYTE_ORDER == BIG_ENDIAN */
+#endif /* BYTE_ORDER != BIG_ENDIAN */
 }
 
 uint16_t swap_uint16(uint16_t val)

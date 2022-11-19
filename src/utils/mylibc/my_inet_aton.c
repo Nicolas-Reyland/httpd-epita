@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <sys/socket.h>
 
+#include "utils/mylibc/my_hton.h"
+
 static void sub_c_zero(char *c, const char **cp, int *base);
 
 static int sub_big_switch(int n, unsigned int parts[4], in_addr_t *val_ptr);
@@ -61,7 +63,7 @@ int my_inet_aton(const char *cp, struct in_addr *addr)
         return 0;
 
     if (addr)
-        addr->s_addr = htonl(val);
+        addr->s_addr = my_htonl(val);
     return 1;
 }
 

@@ -19,6 +19,7 @@
 #include "utils/hash_map/hash_map.h"
 #include "utils/logging.h"
 #include "utils/mem.h"
+#include "utils/mylibc/my_hton.h"
 #include "utils/mylibc/my_inet_aton.h"
 #include "utils/socket_utils.h"
 #include "utils/state.h"
@@ -346,7 +347,7 @@ void *address_pointer(char *ip_addr, char *port, struct sockaddr_in *addr_in)
         return NULL;
     }
     addr_in->sin_family = AF_INET;
-    addr_in->sin_port = htons(strtol(port, NULL, 10));
+    addr_in->sin_port = my_htons(strtol(port, NULL, 10));
 
     void *addr_ptr = addr_in;
     return addr_ptr;

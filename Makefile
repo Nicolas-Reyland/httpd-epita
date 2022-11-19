@@ -41,6 +41,8 @@ check: $(TEST_EXE) $(EXE)
 	./$(TEST_EXE) $(CMD_TEST_ARGS)
 	@echo --- Executing Pytest test suite
 	pytest tests/request_test.py
+	@echo --- Cleaning up test suite
+	$(RM) server.log
 
 $(EXE): $(OBJS) $(MAIN_C)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
